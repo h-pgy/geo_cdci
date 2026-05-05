@@ -37,3 +37,22 @@ class AddressMatcher:
             } 
             for name, score, _ in results
         ]
+    
+    def get_full_logradouro_info(self, logradouro: str) -> pd.DataFrame:
+        """Dado um logradouro, retorna todas as linhas da base que correspondem a ele."""
+        df = self.df[self.df["nm_logradouro_completo"] == logradouro]
+        if df.empty:
+            raise ValueError(f'Logradouro {logradouro} não encontrado na base de dados.')
+        return df
+    
+    def get_full_address_info(self, logradouro:str, numero_porta:str)->pd.DataFrame|None:
+
+        """Dado um logradouro e número de porta, retorna as linhas da base que correspondem a ambos."""
+        df = self.df[
+            (self.df["nm_logradouro_completo"] == logradouro) & 
+            (self.df["cd_numero_porta"] == numero_porta)
+        ]
+
+        if df.empty:
+            return None
+        return df
