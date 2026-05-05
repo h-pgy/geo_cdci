@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     #folder_dados
     FOLDER_DADOS: str = "dados"
 
+    # address_search
+    MAX_ADDRESS_SEARCH_RESULTS: int = 5
+    ADDRESS_SEARCH_FUZZY_SCORE_THRESHOLD: float = 70.0
+
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
