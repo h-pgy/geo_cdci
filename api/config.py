@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     # Camadas
     LAYER_LOTES: str = "lote_cidadao"
 
+
+    #folder_dados
+    FOLDER_DADOS: str = "dados"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
