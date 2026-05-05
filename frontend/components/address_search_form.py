@@ -7,49 +7,91 @@ class AddressSearchForm:
         """
         pass
 
-    def render_logradouro_input(self):
+    def logradouro_input(self):
         """
         Renderiza o campo de texto para o nome da rua.
         """
         return st.text_input(
             "Logradouro",
-            placeholder="Ex: Avenida Paulista ou Direita",
+            placeholder="Ex: Avenida Paulista ou Rua Direita",
             help="O logradouro é o nome da rua, avenida, praça ou alameda onde o imóvel está localizado."
         )
 
-    def render_numero_input(self):
+    def numero_input(self):
         """
         Renderiza o campo numérico para a porta do imóvel.
         """
         return st.number_input(
             "Número",
-            min_value=0,
+            min_value=1,
             step=1,
             help="Este é o número oficial da rua. Caso o seu imóvel seja um apartamento ou sala em um prédio, "
                  "digite o número principal do edifício. Você poderá detalhar a unidade mais adiante."
         )
+    
+    def help_logradouro(self):
+        """
+        Explicação detalhada sobre a identificação do logradouro.
+        """
+        with st.popover("Dúvidas sobre o logradouro?"):
+            st.write(
+                "O logradouro é o nome oficial da via (rua, avenida, praça, etc.) onde o imóvel está registrado. "
+                "É necessário preencher este campo para que o sistema localize a face de quadra correspondente no mapa da cidade."
+            )
+            st.write(
+                "O nome digitado passará por uma conferência automática com a base oficial da Prefeitura. "
+                "Caso existam variações na escrita, o sistema apresentará as opções mais prováveis para sua escolha."
+            )
+
+    def help_numero(self):
+        """
+        Explicação detalhada sobre a numeração do imóvel.
+        """
+        with st.popover("Dúvidas sobre o número?"):
+            st.write(
+                "Utilizamos o número da porta para identificar a posição exata do imóvel dentro do logradouro. "
+                "Esta informação é cruzada com o Cadastro Imobiliário Fiscal para vincular os dados do proprietário e as características do lote."
+            )
+            st.write(
+                "Para condomínios ou edifícios, utilize o número principal da entrada. "
+                "A localização precisa é fundamental para que o sistema gere o perímetro georreferenciado que constará na sua certidão."
+            )
 
     def render(self):
         """
         Orquestra a renderização dos inputs dentro de um formulário e container.
         """
-        with st.container(border=True):
-            st.write("Identificação do Imóvel")
+        cols = st.columns([0.05, 0.9, 0.05])
+        with cols[1]:
+            with st.container(border=True):
+                st.write("Identificação do Imóvel")
+                
+                
+                with st.form(key="address_search_form", clear_on_submit=False):
+                    cols =  st.columns([0.75, 0.25])
+                    with cols[0]:
+                        logradouro = self.logradouro_input()
+                    with cols[1]:
+                        self.help_logradouro()
+                    cols = st.columns([0.75, 0.25])
+                    with cols[0]:
+                        numero = self.numero_input()
+                    with cols[1]:
+                        self.help_numero()
+                    
+                    submit_button = st.form_submit_button("Consultar endereço")
+                    
+                    if submit_button:
+                        if not logradouro:
+                            st.error("O campo de logradouro é obrigatório.")
+                            return {"submitted": False}
+                        return {
+                            "logradouro": logradouro,
+                            "numero": numero,
+                            "submitted": True
+                        }
             
-            with st.form(key="address_search_form", clear_on_submit=False):
-                logradouro = self.render_logradouro_input()
-                numero = self.render_numero_input()
-                
-                submit_button = st.form_submit_button("Consultar endereço")
-                
-                if submit_button:
-                    return {
-                        "logradouro": logradouro,
-                        "numero": numero,
-                        "submitted": True
-                    }
-        
-        return {"submitted": False}
+            return {"submitted": False}
 
     def __call__(self):
         """
