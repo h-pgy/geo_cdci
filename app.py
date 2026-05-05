@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.components import Header
+from frontend.components import Header, AddressSearchForm
 
 
 def main():
@@ -7,6 +7,9 @@ def main():
 
     render_header = Header()
     render_header()
+    address_form = AddressSearchForm()
+    address_data = address_form()
+    st.write(address_data)
 
 
 
