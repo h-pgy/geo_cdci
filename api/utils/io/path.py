@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Union
 import geopandas as gpd
-from config import settings
+from api.config import settings
 
 DATA_DIR = Path(settings.FOLDER_DADOS)
 

@@ -1,7 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 from pathlib import Path
-from utils.io.path import data_path
+from api.utils.io.path import data_path
 
 def save_parquet(data: gpd.GeoDataFrame|pd.DataFrame, filename: str, subfolder: str = "") -> Path:
     # Garante a extensão .parquet
