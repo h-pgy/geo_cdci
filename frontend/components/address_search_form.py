@@ -1,5 +1,6 @@
 import streamlit as st
 import re
+from frontend.dto.address_search_input import AddressSearchInputDTO
 
 class AddressSearchForm:
     def __init__(self):
@@ -62,7 +63,7 @@ class AddressSearchForm:
         """
         Valida se o logradouro possui apenas caracteres válidos e conteúdo suficiente.
         """
-        
+
         if logradouro is None or len(logradouro)==0:
             st.error("O campo logradouro é obrigatório.")
             return False
@@ -111,16 +112,24 @@ class AddressSearchForm:
                     
                     if submit_button:
                         if not self.validate_logradouro(logradouro):
-                            return {"submitted": False}
-                        return {
-                            "logradouro": logradouro,
-                            "numero": numero,
-                            "submitted": True
-                        }
+                            return AddressSearchInputDTO(
+                                logradouro="",
+                                numero=0,
+                                submitted=False
+                            )
+                        return AddressSearchInputDTO(
+                            logradouro=logradouro,
+                            numero=numero,
+                            submitted=True
+                        )
             
-            return {"submitted": False}
+            return AddressSearchInputDTO(
+                logradouro="",
+                numero=0,
+                submitted=False
+            )
 
-    def __call__(self):
+    def __call__(self)->AddressSearchInputDTO:
         """
         Permite chamar a instância da classe como uma função.
         """
