@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 
 class AddressSearchForm:
     def __init__(self):
@@ -57,6 +58,33 @@ class AddressSearchForm:
                 "A localização precisa é fundamental para que o sistema gere o perímetro georreferenciado que constará na sua certidão."
             )
 
+    def validate_logradouro(self, logradouro: str|None) -> bool:
+        """
+        Valida se o logradouro possui apenas caracteres válidos e conteúdo suficiente.
+        """
+        
+        if logradouro is None or len(logradouro)==0:
+            st.error("O campo logradouro é obrigatório.")
+            return False
+        
+        clean_text = str(logradouro).strip()
+        
+        if not clean_text:
+            st.error("O campo logradouro não pode estar vazio.")
+            return False
+
+        if len(clean_text) < 2:
+            st.error("O logradouro deve conter ao menos 2 caracteres.")
+            return False
+
+        # Verifica se existem caracteres que não deveriam estar em um nome de rua
+        # Permite letras (incluindo acentuadas), números, espaços e hifens
+        if not re.match(r'^[a-zA-Z0-9À-ÿ\s\-]+$', clean_text):
+            st.error("O logradouro contém caracteres inválidos. Utilize apenas letras, números e espaços.")
+            return False
+            
+        return True
+
     def render(self):
         """
         Orquestra a renderização dos inputs dentro de um formulário e container.
@@ -82,8 +110,7 @@ class AddressSearchForm:
                     submit_button = st.form_submit_button("Consultar endereço")
                     
                     if submit_button:
-                        if not logradouro:
-                            st.error("O campo de logradouro é obrigatório.")
+                        if not self.validate_logradouro(logradouro):
                             return {"submitted": False}
                         return {
                             "logradouro": logradouro,
