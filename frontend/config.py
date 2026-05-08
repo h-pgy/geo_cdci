@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     #imagens
     BANNER_IMG: str = "banner.png"
 
+    #STATE_KEYS
+    FORM_LOGRADOURO_SUBMITED: str = 'form_logradouro_submited'
+    SELECTED_LOGRADOURO_KEY: str = "selected_logradouro_final"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

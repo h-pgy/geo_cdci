@@ -1,13 +1,37 @@
 import streamlit as st
 import re
 from frontend.dto.address_search_input import AddressSearchInputDTO
+from frontend.config import settings
+
+SELECTED_LOGRADOURO_KEY = settings.SELECTED_LOGRADOURO_KEY
+FORM_LOGRADOURO_SUBMITED_KEY = settings.FORM_LOGRADOURO_SUBMITED
 
 class AddressSearchForm:
-    def __init__(self):
+
+
+    @property
+    def form_submitted(self) -> bool:
+        """Verifica se o formulário de busca de endereço foi submetido.
         """
-        Inicializa o estado interno do componente se necessário.
+        return st.session_state.get(FORM_LOGRADOURO_SUBMITED_KEY, False)
+
+    @property
+    def logradouro_selecionado(self) -> str|None:
+        """Verifica se um logradouro já foi selecionado na sessão.
         """
-        pass
+        return st.session_state.get(SELECTED_LOGRADOURO_KEY, '') 
+    
+    @property
+    def logradouro_already_selected(self) -> bool:
+        """Verifica se um logradouro já foi selecionado na sessão.
+        """
+        return bool(self.logradouro_selecionado)
+    
+    def empty_selected_logradouro(self):
+        """Limpa o logradouro selecionado na sessão.
+        """
+        if SELECTED_LOGRADOURO_KEY in st.session_state:
+            del st.session_state[SELECTED_LOGRADOURO_KEY]
 
     def logradouro_input(self):
         """
@@ -85,6 +109,20 @@ class AddressSearchForm:
             return False
             
         return True
+    
+    def desubmit_form(self):
+        """Marca o formulário como não submetido para permitir novas consultas.
+        """
+        st.session_state[FORM_LOGRADOURO_SUBMITED_KEY] = False
+
+    def clean_up_earlier_submission(self):
+        if self.form_submitted:
+            st.warning("O formulário já foi submetido. Atualizando os dados com a nova consulta.")
+            self.desubmit_form()
+
+        if self.logradouro_already_selected:
+            st.warning(f'Apagando logradouro anteriormente selecionado: {self.logradouro_selecionado}.')
+            self.empty_selected_logradouro()
 
     def render(self):
         """
@@ -111,6 +149,9 @@ class AddressSearchForm:
                     submit_button = st.form_submit_button("Consultar endereço")
                     
                     if submit_button:
+                        
+                        self.clean_up_earlier_submission()
+
                         if not self.validate_logradouro(logradouro):
                             return AddressSearchInputDTO(
                                 logradouro="",

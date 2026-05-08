@@ -7,7 +7,7 @@ class LogradouroMatchDTO(BaseModel):
 
 class LogradouroSearchResultsDTO(BaseModel):
     input_usuario_processado: str
-    matches: List[LogradouroMatchDTO] = []
+    matches: List[LogradouroMatchDTO]
     match_100: bool = False
 
     @model_validator(mode='after')
@@ -16,8 +16,11 @@ class LogradouroSearchResultsDTO(BaseModel):
         Ordena a lista de matches por score e valida a consistência da flag match_100.
         """
         # 1. Ordenação garantida: do maior score para o menor
-        if self.matches:
-            self.matches.sort(key=lambda x: x.score, reverse=True)
+
+        if not self.matches:
+            raise ValueError("A lista de matches não pode ser vazia.")
+
+        self.matches.sort(key=lambda x: x.score, reverse=True)
 
         # 2. Verificação de consistência da flag match_100
         scores = [m.score for m in self.matches]
