@@ -24,7 +24,7 @@ class AddressResolverComponent:
         """
         Executa o match fonético no service e encapsula o resultado no DTO.
         """
-        raw_matches = self.matcher.find_matches(input_dto.logradouro)
+        raw_matches = self.matcher.find_matches_pipeline(input_dto.logradouro)
         
         if not raw_matches:
             return None

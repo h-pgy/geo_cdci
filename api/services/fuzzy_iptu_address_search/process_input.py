@@ -74,17 +74,6 @@ class AddressStringProcessor:
             "CHACARA": "CH"
         }
 
-    def __init__(self):
-            # Pipeline de métodos a serem executados na ordem
-            self.pipeline = [
-                self.to_upper,
-                self.remove_accents,
-                self.clean_special_chars,
-                self.normalizar_tipo_logradouro,
-                self.remove_address_type,
-                self.strip_spaces
-            ]
-
     def to_upper(self, text: str) -> str:
         return text.upper()
 
@@ -118,23 +107,28 @@ class AddressStringProcessor:
         '''Remove o tipo de logradouro do início do texto, se presente.'''
 
         inicio = text.split(' ')[0]
-        print(text)
-        print(inicio)
         if inicio in self.tipos_logradouros:
             return text.removeprefix(inicio).lstrip()
         return text
 
     def strip_spaces(self, text: str) -> str:
         return " ".join(text.split())
+    
+    def pipeline(self, text:str, remove_type:bool=True) -> str:
+        
+        text = self.to_upper(text)
+        text = self.remove_accents(text)
+        text = self.clean_special_chars(text)
+        text = self.normalizar_tipo_logradouro(text)
+        if remove_type:
+            text = self.remove_address_type(text)
+        text = self.strip_spaces(text)
 
-    def run(self, text: str) -> str:
+        return text
+    
+    def __call__(self, text: str, remove_logradouro_type:bool=False) -> str:
         """Executa todo o pipeline de tratamento."""
         if not text:
             return ""
-        result = text
-        for method in self.pipeline:
-            result = method(result)
+        result = self.pipeline(text, remove_type=remove_logradouro_type)
         return result
-    
-    def __call__(self, text: str) -> str:
-        return self.run(text)

@@ -17,9 +17,10 @@ class AddressMatcher:
         # (Assumindo que nm_logradouro_completo já está limpo na base)
         self.unique_logradouros = self.df["nm_logradouro_completo"].unique().tolist()
 
-    def find_matches(self, user_input: str, limit: int = MAX_ADDRESS_SEARCH_RESULTS, threshold: float = ADDRESS_SEARCH_FUZZY_SCORE_THRESHOLD) -> List[Dict]:
+    def find_matches(self, user_input: str, remove_logradouro_type:bool=False, limit: int = MAX_ADDRESS_SEARCH_RESULTS, 
+                     threshold: float = ADDRESS_SEARCH_FUZZY_SCORE_THRESHOLD) -> List[Dict]:
         """Usa o processador interno para limpar o input antes do match."""
-        query_processed = self.preprocess_input.run(user_input)
+        query_processed = self.preprocess_input(user_input, remove_logradouro_type=remove_logradouro_type)
         
         # O process.extract do RapidFuzz
         results = process.extract(
@@ -37,6 +38,21 @@ class AddressMatcher:
             } 
             for name, score, _ in results
         ]
+    
+    def is_match_100(self, matches:List[Dict])->bool:
+        """Verifica se há um match com score 100."""
+        return any(match["score"] >= 100.0 for match in matches)
+    
+    def find_matches_pipeline(self, user_input:str)->list[dict]:
+        """Executa o pipeline completo de pré-processamento e busca."""
+        
+        first_pass = self.find_matches(user_input, remove_logradouro_type=False)
+        if self.is_match_100(first_pass):
+            return first_pass
+        # Se não houver match 100, tenta novamente removendo o tipo de logradouro
+        # isso precisa ser feito porque se remover o tipo de logradouro nao tem como dar match 100%
+        second_pass = self.find_matches(user_input, remove_logradouro_type=True)
+        return second_pass
     
     def get_full_logradouro_info(self, logradouro: str) -> pd.DataFrame:
         """Dado um logradouro, retorna todas as linhas da base que correspondem a ele."""
