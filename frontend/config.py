@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     #STATE_KEYS
     FORM_LOGRADOURO_SUBMITED: str = 'form_logradouro_submited'
     SELECTED_LOGRADOURO_KEY: str = "selected_logradouro_final"
+    LOGRADOURO_MACHED: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

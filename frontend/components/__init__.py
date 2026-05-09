@@ -1,3 +1,4 @@
 from .header import Header
 from .address_search_form import AddressSearchForm
-from .address_selection import AddressResolverComponent
+from .address_fuzzy_match import LogradouroSearchProcessor
+from .address_selection import PerfectAddressMatchComponent, ManualAddressSelectionComponent

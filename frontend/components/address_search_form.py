@@ -1,9 +1,9 @@
 import streamlit as st
 import re
+from frontend import dto
 from frontend.dto.address_search_input import AddressSearchInputDTO
 from frontend.config import settings
 
-SELECTED_LOGRADOURO_KEY = settings.SELECTED_LOGRADOURO_KEY
 FORM_LOGRADOURO_SUBMITED_KEY = settings.FORM_LOGRADOURO_SUBMITED
 
 class AddressSearchForm:
@@ -15,24 +15,7 @@ class AddressSearchForm:
         """
         return st.session_state.get(FORM_LOGRADOURO_SUBMITED_KEY, False)
 
-    @property
-    def logradouro_selecionado(self) -> str|None:
-        """Verifica se um logradouro já foi selecionado na sessão.
-        """
-        return st.session_state.get(SELECTED_LOGRADOURO_KEY, '') 
     
-    @property
-    def logradouro_already_selected(self) -> bool:
-        """Verifica se um logradouro já foi selecionado na sessão.
-        """
-        return bool(self.logradouro_selecionado)
-    
-    def empty_selected_logradouro(self):
-        """Limpa o logradouro selecionado na sessão.
-        """
-        if SELECTED_LOGRADOURO_KEY in st.session_state:
-            del st.session_state[SELECTED_LOGRADOURO_KEY]
-
     def logradouro_input(self):
         """
         Renderiza o campo de texto para o nome da rua.
@@ -110,19 +93,30 @@ class AddressSearchForm:
             
         return True
     
-    def desubmit_form(self):
-        """Marca o formulário como não submetido para permitir novas consultas.
+
+    def submit_form(self):
+        """Marca o formulário como submetido para controlar o fluxo de interface.
         """
-        st.session_state[FORM_LOGRADOURO_SUBMITED_KEY] = False
+        st.session_state[FORM_LOGRADOURO_SUBMITED_KEY] = True
 
-    def clean_up_earlier_submission(self):
-        if self.form_submitted:
-            st.warning("O formulário já foi submetido. Atualizando os dados com a nova consulta.")
-            self.desubmit_form()
+    def form(self):
 
-        if self.logradouro_already_selected:
-            st.warning(f'Apagando logradouro anteriormente selecionado: {self.logradouro_selecionado}.')
-            self.empty_selected_logradouro()
+        st.write("Identificação do Imóvel")
+                
+        with st.form(key="address_search_form", clear_on_submit=False):
+            cols =  st.columns([0.75, 0.25])
+            with cols[0]:
+                logradouro = self.logradouro_input()
+            with cols[1]:
+                self.help_logradouro()
+            cols = st.columns([0.75, 0.25])
+            with cols[0]:
+                numero = self.numero_input()
+            with cols[1]:
+                self.help_numero()
+            
+            submit_button = st.form_submit_button("Consultar endereço")
+            return submit_button, logradouro, numero
 
     def render(self):
         """
@@ -131,39 +125,19 @@ class AddressSearchForm:
         cols = st.columns([0.05, 0.9, 0.05])
         with cols[1]:
             with st.container(border=True):
-                st.write("Identificação do Imóvel")
                 
-                
-                with st.form(key="address_search_form", clear_on_submit=False):
-                    cols =  st.columns([0.75, 0.25])
-                    with cols[0]:
-                        logradouro = self.logradouro_input()
-                    with cols[1]:
-                        self.help_logradouro()
-                    cols = st.columns([0.75, 0.25])
-                    with cols[0]:
-                        numero = self.numero_input()
-                    with cols[1]:
-                        self.help_numero()
-                    
-                    submit_button = st.form_submit_button("Consultar endereço")
-                    
+                    submit_button, logradouro, numero = self.form()
                     if submit_button:
                         
-                        self.clean_up_earlier_submission()
-
-                        if not self.validate_logradouro(logradouro):
-                            return AddressSearchInputDTO(
-                                logradouro="",
-                                numero=0,
-                                submitted=False
+                        if self.validate_logradouro(logradouro):
+                            dto = AddressSearchInputDTO(
+                                logradouro=logradouro,
+                                numero=numero,
+                                submitted=True
                             )
-                        return AddressSearchInputDTO(
-                            logradouro=logradouro,
-                            numero=numero,
-                            submitted=True
-                        )
-            
+                            self.submit_form()
+                            return dto                            
+
             return AddressSearchInputDTO(
                 logradouro="",
                 numero=0,

@@ -1,9 +1,14 @@
 import streamlit as st
-from frontend.components import Header, AddressSearchForm, AddressResolverComponent
+from frontend.components import (
+    Header, 
+    AddressSearchForm, LogradouroSearchProcessor, PerfectAddressMatchComponent, ManualAddressSelectionComponent
+    )
 from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO, LogradouroMatchDTO
 from frontend.services.adress import get_address_matcher
 from frontend.services.data_loaders import get_df_enderecos_lotes
+from frontend.config import settings
 
+LOGRADOURO_SELECIONADO = settings.SELECTED_LOGRADOURO_KEY
 
 def main():
     '''Renderiza o app'''
@@ -24,9 +29,21 @@ def main():
     address_data: AddressSearchInputDTO = address_form()
 
     #fuzzy search results
-    address_resolver = AddressResolverComponent(matcher_service)
-    resolved_address = address_resolver(address_data)
-    st.info('Endereço resolvido: ' + (resolved_address if resolved_address else "Nenhum endereço selecionado."))
+    logradouro_selecionado = st.session_state.get(LOGRADOURO_SELECIONADO, '')
+
+    if address_form.form_submitted:
+        search_processor = LogradouroSearchProcessor(matcher_service)
+        results_dto: LogradouroSearchResultsDTO | None = search_processor(address_data.logradouro)
+        if results_dto is not None:
+            if results_dto.match_100:
+                match_ui = PerfectAddressMatchComponent(results_dto)
+                logradouro_selecionado = match_ui.render()
+            else:
+                selection_ui = ManualAddressSelectionComponent(results_dto)
+                logradouro_selecionado = selection_ui.render()
+               
+    st.info(f"Logradouro selecionado: **{logradouro_selecionado}**")
+    # Próximo passo da lógica (ex: buscar dados no SQL)
 
 
 if __name__ =="__main__":

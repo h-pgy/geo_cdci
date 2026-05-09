@@ -1,137 +1,73 @@
 import streamlit as st
 import time
 from typing import Optional
-from frontend.dto.address_search_input import AddressSearchInputDTO
-from frontend.dto.logradouro_match import (
-    LogradouroMatchDTO, 
-    LogradouroSearchResultsDTO
-)
-from api.services.fuzzy_iptu_address_search import AddressMatcher
+from frontend.dto.logradouro_match import LogradouroSearchResultsDTO
 from frontend.config import settings
 
 SELECTED_LOGRADOURO_KEY = settings.SELECTED_LOGRADOURO_KEY
+LOGRADOURO_MACHED = settings.LOGRADOURO_MACHED 
 
-class AddressResolverComponent:
-    def __init__(self, matcher: AddressMatcher):
-        """
-        Componente responsável por resolver a ambiguidade de logradouros
-        utilizando busca fonética e interface de seleção.
-        """
-        self.matcher = matcher
-        self.state_key = SELECTED_LOGRADOURO_KEY
+class PerfectAddressMatchComponent:
+    def __init__(self, results: LogradouroSearchResultsDTO, state_key: str=SELECTED_LOGRADOURO_KEY, matched_key: bool=LOGRADOURO_MACHED):
+        self.results = results
+        self.state_key = state_key
+        self.matched_key = matched_key
 
-    def run_search(self, input_dto: AddressSearchInputDTO) -> Optional[LogradouroSearchResultsDTO]:
-        """
-        Executa o match fonético no service e encapsula o resultado no DTO.
-        """
-        raw_matches = self.matcher.find_matches_pipeline(input_dto.logradouro)
+    def render(self):
+
+        if st.session_state.get(self.matched_key, False) and st.session_state.get(self.state_key):
+            st.info(f"Logradouro já selecionado: **{st.session_state.get(self.state_key, '')}**")
+            return st.session_state.get(self.state_key, '')
+
+        logradouro = self.results.melhor_match.logradouro
+        st.session_state[self.state_key] = logradouro
+        st.session_state[self.matched_key] = True
         
-        if not raw_matches:
-            return None
+        with st.columns([0.05, 0.9, 0.05])[1]:
+            st.success(f"Logradouro identificado: **{logradouro}**")
+            st.caption(f"Match perfeito encontrado para '{self.results.input_usuario_processado}'")
+            st.checkbox('Teste')
+        return logradouro
+    
 
-        # O primeiro match contém o input processado pelo motor de busca
-        input_processado = raw_matches[0]["input_processado"]
+class ManualAddressSelectionComponent:
+    def __init__(self, results: LogradouroSearchResultsDTO, state_key: str=SELECTED_LOGRADOURO_KEY, matched_key: bool=LOGRADOURO_MACHED):
+        self.results = results
+        self.state_key = state_key
+        self.matched_key = matched_key
 
-        matches_list = [
-            LogradouroMatchDTO(
-                logradouro=item["logradouro"], 
-                score=item["score"]
-            ) 
-            for item in raw_matches
-        ]
+    def render(self):
 
-        has_match_100 = any(m.score >= 100.0 for m in matches_list)
+        if st.session_state.get(self.matched_key, False) and st.session_state.get(self.state_key):
+            st.info(f"Logradouro já selecionado: **{st.session_state.get(self.state_key, '')}**")
+            return st.session_state.get(self.state_key, '')
 
-        return LogradouroSearchResultsDTO(
-            input_usuario_processado=input_processado,
-            matches=matches_list,
-            match_100=has_match_100
-        )
+        opcoes = [m.logradouro for m in self.results.matches]
+        captions = [f"Confiança: {m.score}%" for m in self.results.matches]
 
-    def handle_perfect_match(self, results: LogradouroSearchResultsDTO) -> str:
-        """
-        Caminho automático para quando a confiança é total.
-        """
-        logradouro_selecionado = results.melhor_match.logradouro
-        st.session_state[self.state_key] = logradouro_selecionado
-        return logradouro_selecionado
+        logradouro_anterior = st.session_state.get(self.state_key)
 
-    def handle_manual_selection(self, results: LogradouroSearchResultsDTO) -> Optional[str]:
-        """
-        Apresenta interface de rádio para escolha manual do cidadão.
-        """
-        opcoes = [m.logradouro for m in results.matches]
-        captions = [f"Nível de confiança: {m.score}%" for m in results.matches]
+        index_ = opcoes.index(logradouro_anterior) if logradouro_anterior in opcoes else None
 
-        st.warning(f"Não encontramos um match exato para o termo '{results.input_usuario_processado}'.")
-        
-        with st.form(key="logradouro_selection_form"):
-            escolha = st.radio(
-                "Selecione o logradouro correto entre as opções encontradas:",
-                options=opcoes,
-                captions=captions,
-                index=0,
-                help="Os nomes abaixo correspondem ao cadastro oficial da Prefeitura de São Paulo."
-            )
+        with st.columns([0.05, 0.9, 0.05])[1]:
+            st.warning(f"Não encontramos um match exato para '{self.results.input_usuario_processado}'.")
             
-            if st.form_submit_button("Confirmar seleção de logradouro"):
-                st.session_state[self.state_key] = escolha
-                return escolha
+            with st.form(key="manual_address_selection_form"):
+                escolha = st.radio(
+                    "Selecione a opção correta:",
+                    options=opcoes,
+                    captions=captions,
+                    index=index_
+                )
+                submit_button = st.form_submit_button(label="Confirmar")
+                if not submit_button:
+                    st.stop()
                 
-        
-        return None
+            if escolha is None:
+                st.warning("Nenhuma opção selecionada. Por favor, selecione um logradouro para continuar.")
+                st.stop()
+          
+        st.session_state[self.state_key] = escolha
+        st.session_state[self.matched_key] = True
 
-    def resolve_ui_flow(self, results: LogradouroSearchResultsDTO) -> Optional[str]:
-        """
-        Roteador de interface que gerencia o estado da seleção.
-        """
-
-        # Lógica de decisão inicial
-        if results.match_100:
-            logradouro_final = self.handle_perfect_match(results)
-
-        else:
-            logradouro_final = self.handle_manual_selection(results)
-            
-        return logradouro_final
-    
-    @property
-    def logradouro_selected(self)->bool:
-
-        return st.session_state.get(self.state_key) is not None
-    
-    def clean_selected_logradouro(self):
-        if self.state_key in st.session_state:
-            del st.session_state[self.state_key]
-
-    def __call__(self, input_dto: AddressSearchInputDTO) -> Optional[str]:
-        """
-        Ponto de entrada do componente.
-        """
-
-        print(st.session_state.get(self.state_key))
-
-        if not input_dto.submitted:
-            # Reseta o estado caso o formulário de busca principal seja reiniciado
-            self.clean_selected_logradouro()
-            return None
-
-        if self.logradouro_selected:
-            logradouro_selecionado =  st.session_state.get(self.state_key)
-
-        else:
-        
-
-            with st.spinner("Buscando logradouros correspondentes..."):
-                results_dto = self.run_search(input_dto)
-
-            if not results_dto:
-                st.error("Nenhum logradouro encontrado. Verifique se o nome está correto.")
-                return None
-
-            logradouro_selecionado = self.resolve_ui_flow(results_dto)
-
-        if logradouro_selecionado:
-            st.info('Logradouro selecionado: ' + logradouro_selecionado)
-
-        return logradouro_selecionado
+        return escolha
