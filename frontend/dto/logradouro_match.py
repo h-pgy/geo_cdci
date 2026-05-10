@@ -6,6 +6,7 @@ class LogradouroMatchDTO(BaseModel):
     score: float
 
 class LogradouroSearchResultsDTO(BaseModel):
+    input_original: str
     input_usuario_processado: str
     matches: List[LogradouroMatchDTO]
     match_100: bool = False

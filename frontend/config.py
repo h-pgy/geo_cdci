@@ -2,15 +2,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
 
+    #static
     STATIC_FOLDER: str = 'static'
 
     #imagens
     BANNER_IMG: str = "banner.png"
 
-    #STATE_KEYS
-    FORM_LOGRADOURO_SUBMITED: str = 'form_logradouro_submited'
-    SELECTED_LOGRADOURO_KEY: str = "selected_logradouro_final"
-    LOGRADOURO_MACHED: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

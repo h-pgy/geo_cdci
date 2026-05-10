@@ -3,25 +3,25 @@ import re
 from frontend import dto
 from frontend.dto.address_search_input import AddressSearchInputDTO
 from frontend.config import settings
-
-FORM_LOGRADOURO_SUBMITED_KEY = settings.FORM_LOGRADOURO_SUBMITED
+from frontend.state import AppState
 
 class AddressSearchForm:
 
 
-    @property
-    def form_submitted(self) -> bool:
-        """Verifica se o formulário de busca de endereço foi submetido.
-        """
-        return st.session_state.get(FORM_LOGRADOURO_SUBMITED_KEY, False)
+    def __init__(self, appstate: AppState)->None:
+        self.appstate = appstate
 
     
     def logradouro_input(self):
         """
         Renderiza o campo de texto para o nome da rua.
         """
+
+        value = self.appstate.address_search_input.logradouro if self.appstate.address_search_input else ""
+
         return st.text_input(
             "Logradouro",
+            value=value,
             placeholder="Ex: Avenida Paulista ou Rua Direita",
             help="O logradouro é o nome da rua, avenida, praça ou alameda onde o imóvel está localizado."
         )
@@ -30,10 +30,14 @@ class AddressSearchForm:
         """
         Renderiza o campo numérico para a porta do imóvel.
         """
+
+        value = self.appstate.address_search_input.numero if self.appstate.address_search_form_filled else 1
+
         return st.number_input(
             "Número",
             min_value=1,
             step=1,
+            value=value,
             help="Este é o número oficial da rua. Caso o seu imóvel seja um apartamento ou sala em um prédio, "
                  "digite o número principal do edifício. Você poderá detalhar a unidade mais adiante."
         )
@@ -94,10 +98,14 @@ class AddressSearchForm:
         return True
     
 
-    def submit_form(self):
-        """Marca o formulário como submetido para controlar o fluxo de interface.
+    def define_submit_text(self)->str:
         """
-        st.session_state[FORM_LOGRADOURO_SUBMITED_KEY] = True
+        Define o texto do botão de submit com base no estado atual do formulário.
+        """
+        if self.appstate.address_search_input is None or not self.appstate.address_search_input.submitted:
+            return "Consultar endereço"
+        else:
+            return "Atualizar busca"
 
     def form(self):
 
@@ -114,11 +122,16 @@ class AddressSearchForm:
                 numero = self.numero_input()
             with cols[1]:
                 self.help_numero()
-            
-            submit_button = st.form_submit_button("Consultar endereço")
-            return submit_button, logradouro, numero
 
-    def render(self):
+            submit_text = self.define_submit_text()
+            submit_button = st.form_submit_button(submit_text)
+            return submit_button, logradouro, numero
+        
+    def state_clean_up(self):
+        self.appstate.delete_key("selected_logradouro", namespace="address")
+        self.appstate.delete_key("logradouro_search_results", namespace="address")
+
+    def render(self) -> AddressSearchInputDTO:
         """
         Orquestra a renderização dos inputs dentro de um formulário e container.
         """
@@ -129,13 +142,15 @@ class AddressSearchForm:
                     submit_button, logradouro, numero = self.form()
                     if submit_button:
                         
+                        #aqui precisa apagar o logradouro selecionado
+                        self.state_clean_up()
+
                         if self.validate_logradouro(logradouro):
                             dto = AddressSearchInputDTO(
                                 logradouro=logradouro,
                                 numero=numero,
                                 submitted=True
                             )
-                            self.submit_form()
                             return dto                            
 
             return AddressSearchInputDTO(

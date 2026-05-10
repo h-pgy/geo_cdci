@@ -9,16 +9,16 @@ class LogradouroSearchProcessor:
     def __init__(self, matcher):
         self.matcher = matcher
 
-    def _show_not_found_error(self):
+    def _show_not_found_error(self, input_original:str):
         """
         Exibe feedback visual para buscas sem retorno.
         """
         st.error(
-            "Não localizamos nenhum logradouro com o termo informado. "
+            f"Não localizamos nenhum logradouro com o termo informado: {input_original}. "
             "Verifique a grafia ou tente um nome mais genérico."
         )
 
-    def _build_results_dto(self, raw_matches: List[Dict]) -> Optional[LogradouroSearchResultsDTO]:
+    def _build_results_dto(self, raw_matches: List[Dict], input_original:str) -> Optional[LogradouroSearchResultsDTO]:
         """
         Encapsula a lógica de conversão e tratamento de erros de integridade.
         """
@@ -30,6 +30,7 @@ class LogradouroSearchProcessor:
             ]
             
             return LogradouroSearchResultsDTO(
+                input_original=input_original,
                 input_usuario_processado=input_processado,
                 matches=matches_list,
                 match_100=any(m.score >= 100.0 for m in matches_list)
@@ -46,7 +47,7 @@ class LogradouroSearchProcessor:
             raw_matches = self.matcher.find_matches_pipeline(logradouro_input)
         
         if not raw_matches:
-            self._show_not_found_error()
+            self._show_not_found_error(logradouro_input)
             return None
 
-        return self._build_results_dto(raw_matches)
+        return self._build_results_dto(raw_matches, logradouro_input)
