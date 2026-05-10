@@ -4,8 +4,8 @@ import re
 
 class AddressSearchInputDTO(BaseModel):
     # Permite que o objeto seja instanciado sem dados inicialmente
-    logradouro: Optional[str] = None
-    numero: Optional[int] = None
+    logradouro: str
+    numero: int
     submitted: bool = False
 
     # Configuração para permitir nomes de atributos flexíveis se necessário

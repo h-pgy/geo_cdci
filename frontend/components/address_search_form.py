@@ -144,20 +144,27 @@ class AddressSearchForm:
                         
                         #aqui precisa apagar o logradouro selecionado
                         self.state_clean_up()
-
+                        self.appstate.address_search_form_filled = True
                         if self.validate_logradouro(logradouro):
                             dto = AddressSearchInputDTO(
                                 logradouro=logradouro,
                                 numero=numero,
                                 submitted=True
                             )
-                            return dto                            
+                            return dto        
+                    else:
+                        if not self.appstate.address_search_form_filled:
+                            st.info("Preencha o formulário e clique em 'Consultar endereço' para iniciar a busca.")
+                            st.stop()
+                        else:
+                            #form já preenchido, apenas renderiza os dados atuais
+                            dto = AddressSearchInputDTO(
+                                logradouro=logradouro,
+                                numero=numero,
+                                submitted=True
+                            )
+                            return dto
 
-            return AddressSearchInputDTO(
-                logradouro="",
-                numero=0,
-                submitted=False
-            )
 
     def __call__(self)->AddressSearchInputDTO:
         """

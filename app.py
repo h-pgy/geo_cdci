@@ -28,9 +28,12 @@ def main():
     #search input form
     address_form = AddressSearchForm(state)
     address_data: AddressSearchInputDTO = address_form()
-    state.address_search_input = address_data
-    if not state.address_search_form_filled:
-         st.stop()
+    if state.address_search_form_filled:
+        state.address_search_input = address_data
+    else:
+        st.warning("Preencha o formulário de busca para iniciar a pesquisa de logradouro.")
+        st.stop()
+
 
     #fuzzy match search for logradouro
     search_processor = LogradouroSearchProcessor(matcher_service)

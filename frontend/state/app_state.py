@@ -15,8 +15,11 @@ class AppState(AbstractAppState):
     @property
     def address_search_form_filled(self)->bool:
 
-        search_input = self.address_search_input
-        return search_input is not None and search_input.submitted
+       return self.get_value("address_search_form_filled", namespace="address") or False
+    
+    @address_search_form_filled.setter
+    def address_search_form_filled(self, value: bool) -> None:
+        self.set_value("address_search_form_filled", value, namespace="address")
     
     @property
     def logradouro_search_results(self) -> Optional[LogradouroSearchResultsDTO]:
