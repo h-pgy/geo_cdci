@@ -44,3 +44,19 @@ class AppState(AbstractAppState):
     @logradouro_already_selected.setter
     def logradouro_already_selected(self, value: bool)->None:
         self.set_value("logradouro_already_selected", value, namespace="address")
+
+    @property
+    def address_matched(self)->bool:
+        return self.get_value("address_matched", namespace="address") or False
+    
+    @address_matched.setter
+    def address_matched(self, value: bool)->None:
+        self.set_value("address_matched", value, namespace="address")
+
+    @property
+    def address_matched_id(self)->int:
+        return self.get_value("address_matched_id", namespace="address")
+    
+    @address_matched_id.setter
+    def address_matched_id(self, value:int)->None:
+        self.set_value("address_matched_id", value, namespace="address")

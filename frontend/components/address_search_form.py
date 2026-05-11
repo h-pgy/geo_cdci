@@ -141,6 +141,8 @@ class AddressSearchForm:
         self.appstate.delete_key("selected_logradouro", namespace="address")
         self.appstate.delete_key("logradouro_already_selected", namespace="address")
         self.appstate.delete_key("logradouro_search_results", namespace="address")
+        self.appstate.delete_key("address_matched", namespace="address")
+        self.appstate.delete_key("address_matched_id", namespace="address")
 
     def render(self) -> AddressSearchInputDTO:
         """

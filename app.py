@@ -1,9 +1,9 @@
 import streamlit as st
 from frontend.components import (
     Header, 
-    AddressSearchForm, LogradouroSearchProcessor, AddressSelectionHandler
+    AddressSearchForm, LogradouroSearchProcessor, AddressSelectionHandler, PropertyMatchHandler
     )
-from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO, LogradouroMatchDTO
+from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO
 from frontend.services.adress import get_address_matcher
 from frontend.services.data_loaders import get_df_enderecos_lotes
 import time
@@ -37,6 +37,7 @@ def main():
 
     search_processor = LogradouroSearchProcessor(matcher_service)
     logradouro_input = state.address_search_input.logradouro
+    numero_input = state.address_search_input.numero
     results_dto: LogradouroSearchResultsDTO | None = search_processor(logradouro_input)
     space_logradouro = st.empty()
     if not state.logradouro_already_selected:
@@ -51,7 +52,13 @@ def main():
                 st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.", icon=":material/error:")
                 st.stop()
         
-    # Próximo passo da lógica (ex: buscar dados no SQL)
+    # property full address match
+
+    if not state.address_matched:
+        property_match_handler = PropertyMatchHandler(state, matcher_service)
+        id_selected_property = property_match_handler(logradouro_selecionado, numero_input)
+
+    st.success(f"Endereço completo selecionado com ID: {id_selected_property}", icon=":material/house_with_garden:")
 
     
 
