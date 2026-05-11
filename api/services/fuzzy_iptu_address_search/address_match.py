@@ -73,3 +73,15 @@ class AddressMatcher:
         if df.empty:
             return None
         return df
+    
+    def get_nearest_neighbor_addresses(self, logradouro:str, numero_porta:int, n_mais_proximos:int=MAX_ADDRESS_SEARCH_RESULTS)->pd.DataFrame|None:
+        """Dado um logradouro e número de porta, retorna a linha da base que é o vizinho mais próximo do número de porta fornecido."""
+        
+        df_logradouro = self.get_full_logradouro_info(logradouro)
+        # Para calcular a distância entre os números de porta, precisamos garantir que eles sejam numéricos.
+        # eu definio o valor_sentinela como um número muito baixo para garantir que endereços sem número de porta ou com número não numérico fiquem no final da lista de proximidade.
+        valor_sentinela = -9999999999
+        numeros_int = pd.to_numeric(df_logradouro["cd_numero_porta"], errors='coerce').fillna(valor_sentinela).astype(int)
+        distancias = (numeros_int - numero_porta).abs()
+        n_indices_mais_proximos = distancias.nsmallest(n_mais_proximos).index
+        return df_logradouro.loc[n_indices_mais_proximos]
