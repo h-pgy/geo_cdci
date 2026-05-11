@@ -112,7 +112,8 @@ class AddressStringProcessor:
         return text
 
     def strip_spaces(self, text: str) -> str:
-        return " ".join(text.split())
+        text = text.replace('  ', ' ')
+        return text.strip()
     
     def pipeline(self, text:str, remove_type:bool=True) -> str:
         

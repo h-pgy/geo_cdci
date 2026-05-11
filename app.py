@@ -6,6 +6,7 @@ from frontend.components import (
 from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO, LogradouroMatchDTO
 from frontend.services.adress import get_address_matcher
 from frontend.services.data_loaders import get_df_enderecos_lotes
+import time
 
 from frontend.state import AppState
 
@@ -40,19 +41,28 @@ def main():
     logradouro_input = state.address_search_input.logradouro
     results_dto: LogradouroSearchResultsDTO | None = search_processor(logradouro_input)
 
+    space_logradouro = st.empty()
+
     #escolha do logradouro com base na busca
     if results_dto is not None:
-        state.logradouro_search_results = results_dto
-        if results_dto.match_100:
-            match_ui = PerfectAddressMatchComponent(results_dto, state)
-            logradouro_selecionado = match_ui.render()
-            state.logradouro_selecionado = logradouro_selecionado
+        with space_logradouro.container(border=True):
+            state.logradouro_search_results = results_dto
+            if results_dto.match_100:
+                match_ui = PerfectAddressMatchComponent(results_dto, state)
+                logradouro_selecionado = match_ui.render()
+                state.logradouro_selecionado = logradouro_selecionado
+            else:
+                selection_ui = ManualAddressSelectionComponent(results_dto, state)
+                logradouro_selecionado = selection_ui.render()
+                state.logradouro_selecionado = logradouro_selecionado
+            with st.spinner("Processando seleção..."):
+                time.sleep(1)
+
+    with space_logradouro.container():
+        if state.logradouro_selecionado is not None:
+            st.success(f"Logradouro selecionado: {state.logradouro_selecionado}")
         else:
-            selection_ui = ManualAddressSelectionComponent(results_dto, state)
-            logradouro_selecionado = selection_ui.render()
-            state.logradouro_selecionado = logradouro_selecionado
-               
-    st.info(f"Logradouro selecionado: **{state.logradouro_selecionado}**")
+            st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.")
     # Próximo passo da lógica (ex: buscar dados no SQL)
 
 

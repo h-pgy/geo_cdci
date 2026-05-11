@@ -1,4 +1,4 @@
-from rapidfuzz import process, utils as fuzzy_utils
+from rapidfuzz import process, fuzz
 from typing import List, Dict
 import pandas as pd
 from .process_input import AddressStringProcessor
@@ -25,7 +25,8 @@ class AddressMatcher:
         # O process.extract do RapidFuzz
         results = process.extract(
             query_processed, 
-            self.unique_logradouros, 
+            self.unique_logradouros,
+            scorer = fuzz.WRatio,
             limit=limit,
             score_cutoff=threshold,
         )
