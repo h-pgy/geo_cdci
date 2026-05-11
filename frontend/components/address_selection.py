@@ -7,86 +7,93 @@ from frontend.state import AppState
 
 class AddressSelectionHandler:
 
-    def __init__(self, results: LogradouroSearchResultsDTO, appstate: AppState):
-        self.results = results
+    def __init__(self, appstate: AppState, space):
         self.appstate = appstate
+        self.space = space
 
-    def handle_selection(self) -> str:
+    def handle_selection(self, results: LogradouroSearchResultsDTO) -> str:
 
-        if self.results.match_100:
-            match_ui = PerfectAddressMatchComponent(self.results, self.appstate)
-            logradouro_selecionado = match_ui()
+        if results.match_100:
+            match_ui = PerfectAddressMatchComponent(self.appstate)
+            logradouro_selecionado = match_ui(results)
             
         else:
-            selection_ui = ManualAddressSelectionComponent(self.results, self.appstate)
-            logradouro_selecionado = selection_ui()
+            selection_ui = ManualAddressSelectionComponent(self.appstate)
+            logradouro_selecionado = selection_ui(results)
         
         return logradouro_selecionado
     
-    def render(self)->str:
+    def render(self, results: LogradouroSearchResultsDTO):
 
-        if not self.appstate.address_search_form_filled:
-             st.warning("Nenhum endereço submetido. Por favor, preencha o formulário de busca de endereço.")
-             st.stop()
+        #escolha do logradouro com base na busca
+        if results is not None:
+            with self.space:
+                with st.container(border=True):
+                    logradouro_selecionado = self.handle_selection(results)
+                    self.appstate.logradouro_selecionado = logradouro_selecionado
+                    self.appstate.logradouro_already_selected = True
+                    
 
-        if self.appstate.logradouro_already_selected:
-            logradouro = self.appstate.logradouro_selecionado
-            st.info(f"Logradouro já selecionado: **{logradouro}**")
-            return logradouro
-        
-        logradouro_selecionado = self.handle_selection()
-        return logradouro_selecionado
+        return self.appstate.logradouro_selecionado
     
-    def __call__(self)->str:
-        return self.render()
+    def __call__(self, results: LogradouroSearchResultsDTO)->str:
+
+        return self.render(results)
+
 
 
 class PerfectAddressMatchComponent:
-    def __init__(self, results: LogradouroSearchResultsDTO, appstate:AppState):
-        self.results = results
+    def __init__(self, appstate:AppState):
         self.appstate = appstate
 
-    def render(self):
+    def render(self, results: LogradouroSearchResultsDTO):
 
-        logradouro = self.results.melhor_match.logradouro        
-        with st.columns([0.05, 0.9, 0.05])[1]:
-            st.success(f"Logradouro identificado: **{logradouro}**")
-            st.caption(f"Match perfeito encontrado para '{self.results.input_usuario_processado}'")
-            st.checkbox('Teste')
+        logradouro = results.melhor_match.logradouro        
+        st.success(f"Match perfeito encontrado para '{results.input_usuario_processado}' : {logradouro}", icon=":material/celebration: ")
+        with st.spinner("Processando seleção..."):
+            time.sleep(1)
+        
         return logradouro
     
-    def __call__(self)->str:
-        return self.render()
+    def __call__(self, results: LogradouroSearchResultsDTO)->str:
+        return self.render(results)
     
 
 class ManualAddressSelectionComponent:
-    def __init__(self, results: LogradouroSearchResultsDTO, appstate: AppState):
-        self.results = results
+    def __init__(self, appstate: AppState):
         self.appstate = appstate
 
-    def render(self):
+    def form(self, results: LogradouroSearchResultsDTO):
 
-        opcoes = [m.logradouro for m in self.results.matches]
-        captions = [f"Confiança: {m.score}%" for m in self.results.matches]
+        opcoes = [m.logradouro for m in results.matches]
+        captions = [f"Confiança: {m.score}%" for m in results.matches]
 
-        with st.columns([0.05, 0.9, 0.05])[1]:
-            st.warning(f"Não encontramos um match exato para '{self.results.input_usuario_processado}'.")
-            
-            with st.form(key="manual_address_selection_form"):
-                escolha = st.radio(
-                    "Selecione a opção correta:",
-                    options=opcoes,
-                    captions=captions,
-                )
-                submit_button = st.form_submit_button(label="Confirmar")
-                if not submit_button:
-                    st.stop()
-                
-            if escolha is None:
-                st.warning("Nenhuma opção selecionada. Por favor, selecione um logradouro para continuar.")
+        with st.form(key="manual_address_selection_form"):
+            escolha = st.radio(
+                "Selecione a opção correta:",
+                options=opcoes,
+                captions=captions,
+            )
+            submit_button = st.form_submit_button(label="Confirmar")
+            if not submit_button:
+                st.info("Selecione um logradouro e clique em 'Confirmar' para prosseguir.", icon=":material/left_click:")
                 st.stop()
-
+        
         return escolha
     
-    def __call__(self)->str:
-        return self.render()
+
+    def render(self, results: LogradouroSearchResultsDTO):
+       
+        st.warning(f"Não encontramos um match exato para '{results.input_usuario_processado}'.")
+        space_form = st.empty()
+        if not self.appstate.logradouro_already_selected:
+            with space_form:
+                escolha = self.form(results)
+                with st.spinner("Processando seleção..."):
+                    time.sleep(1)
+                    st.space()
+                                    
+            return escolha
+    
+    def __call__(self, results: LogradouroSearchResultsDTO)->str|None:
+        return self.render(results)

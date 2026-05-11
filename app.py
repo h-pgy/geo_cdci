@@ -1,7 +1,7 @@
 import streamlit as st
 from frontend.components import (
     Header, 
-    AddressSearchForm, LogradouroSearchProcessor, PerfectAddressMatchComponent, ManualAddressSelectionComponent
+    AddressSearchForm, LogradouroSearchProcessor, AddressSelectionHandler
     )
 from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO, LogradouroMatchDTO
 from frontend.services.adress import get_address_matcher
@@ -14,7 +14,7 @@ def main():
     '''Renderiza o app'''
 
     state = AppState()
-
+    state.write_namespace('address')
     #header
     render_header = Header()
     render_header()
@@ -29,42 +29,32 @@ def main():
     #search input form
     address_form = AddressSearchForm(state)
     address_data: AddressSearchInputDTO = address_form()
-    if state.address_search_form_filled:
-        state.address_search_input = address_data
-    else:
+    if not state.address_search_form_filled:
         st.warning("Preencha o formulário de busca para iniciar a pesquisa de logradouro.")
         st.stop()
+
 
 
     #fuzzy match search for logradouro
     search_processor = LogradouroSearchProcessor(matcher_service)
     logradouro_input = state.address_search_input.logradouro
     results_dto: LogradouroSearchResultsDTO | None = search_processor(logradouro_input)
-
     space_logradouro = st.empty()
-
-    #escolha do logradouro com base na busca
-    if results_dto is not None:
-        with space_logradouro.container(border=True):
-            state.logradouro_search_results = results_dto
-            if results_dto.match_100:
-                match_ui = PerfectAddressMatchComponent(results_dto, state)
-                logradouro_selecionado = match_ui.render()
-                state.logradouro_selecionado = logradouro_selecionado
+    if not state.logradouro_already_selected:
+        selection_handler = AddressSelectionHandler(state, space_logradouro)
+        selection_handler(results_dto)
+    logradouro_selecionado = state.logradouro_selecionado
+    with space_logradouro:
+        with st.container(border=True):
+            if logradouro_selecionado is not None:
+                state.logradouro_already_selected = True
+                st.success(f"Logradouro selecionado: {logradouro_selecionado}", icon=":material/house:")
             else:
-                selection_ui = ManualAddressSelectionComponent(results_dto, state)
-                logradouro_selecionado = selection_ui.render()
-                state.logradouro_selecionado = logradouro_selecionado
-            with st.spinner("Processando seleção..."):
-                time.sleep(1)
-
-    with space_logradouro.container():
-        if state.logradouro_selecionado is not None:
-            st.success(f"Logradouro selecionado: {state.logradouro_selecionado}")
-        else:
-            st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.")
+                st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.", icon=":material/error:")
+    
     # Próximo passo da lógica (ex: buscar dados no SQL)
 
+    
 
 if __name__ =="__main__":
 

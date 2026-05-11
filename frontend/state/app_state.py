@@ -39,4 +39,8 @@ class AppState(AbstractAppState):
 
     @property
     def logradouro_already_selected(self)->bool:
-        return self.logradouro_selecionado is not None
+        return self.get_value("logradouro_already_selected", namespace="address") or False
+    
+    @logradouro_already_selected.setter
+    def logradouro_already_selected(self, value: bool)->None:
+        self.set_value("logradouro_already_selected", value, namespace="address")

@@ -39,3 +39,23 @@ class AbstractAppState:
         if namespace not in st.session_state:
             return False
         return any(st.session_state[namespace].values())
+    
+    def namespace_dici(self, namespace:str)->dict:
+        if namespace not in st.session_state:
+            return {}
+        else:
+            dici = {
+                name : value for
+                name, value in st.session_state[namespace].items()
+            }
+            return dici
+        
+    def write_namespace(self, namespace:str):
+        
+        namespace_dict = self.namespace_dici(namespace)
+        if namespace_dict:
+            st.write(f"Estado atual do namespace '{namespace}':")
+            st.json(namespace_dict)
+        else:
+            st.write(f"Namespace '{namespace}' está vazio.")
+        

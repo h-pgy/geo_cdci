@@ -106,6 +106,15 @@ class AddressSearchForm:
             return "Consultar endereço"
         else:
             return "Atualizar busca"
+        
+    def define_submit_icon(self)->str:
+        """
+        Define o ícone do botão de submit com base no estado atual do formulário.
+        """
+        if self.appstate.address_search_input is None or not self.appstate.address_search_input.submitted:
+            return ":material/search:"
+        else:
+            return ":material/refresh:"
 
     def form(self):
 
@@ -124,11 +133,13 @@ class AddressSearchForm:
                 self.help_numero()
 
             submit_text = self.define_submit_text()
-            submit_button = st.form_submit_button(submit_text)
+            submit_icon = self.define_submit_icon()
+            submit_button = st.form_submit_button(submit_text, icon=submit_icon)
             return submit_button, logradouro, numero
         
     def state_clean_up(self):
         self.appstate.delete_key("selected_logradouro", namespace="address")
+        self.appstate.delete_key("logradouro_already_selected", namespace="address")
         self.appstate.delete_key("logradouro_search_results", namespace="address")
 
     def render(self) -> AddressSearchInputDTO:
@@ -144,13 +155,15 @@ class AddressSearchForm:
                         
                         #aqui precisa apagar o logradouro selecionado
                         self.state_clean_up()
-                        self.appstate.address_search_form_filled = True
+                        
                         if self.validate_logradouro(logradouro):
                             dto = AddressSearchInputDTO(
                                 logradouro=logradouro,
                                 numero=numero,
                                 submitted=True
                             )
+                            self.appstate.address_search_form_filled = True
+                            self.appstate.address_search_input = dto
                             return dto        
                     else:
                         if not self.appstate.address_search_form_filled:
