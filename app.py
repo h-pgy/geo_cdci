@@ -33,9 +33,8 @@ def main():
         st.warning("Preencha o formulário de busca para iniciar a pesquisa de logradouro.")
         st.stop()
 
-
-
     #fuzzy match search for logradouro
+
     search_processor = LogradouroSearchProcessor(matcher_service)
     logradouro_input = state.address_search_input.logradouro
     results_dto: LogradouroSearchResultsDTO | None = search_processor(logradouro_input)
@@ -47,12 +46,14 @@ def main():
     with space_logradouro:
         with st.container(border=True):
             if logradouro_selecionado is not None:
-                state.logradouro_already_selected = True
                 st.success(f"Logradouro selecionado: {logradouro_selecionado}", icon=":material/house:")
             else:
                 st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.", icon=":material/error:")
-    
+                st.stop()
+        
     # Próximo passo da lógica (ex: buscar dados no SQL)
+
+    
 
     
 

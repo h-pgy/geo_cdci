@@ -82,17 +82,17 @@ class AddressSearchForm:
         clean_text = str(logradouro).strip()
         
         if not clean_text:
-            st.error("O campo logradouro não pode estar vazio.")
+            st.error("O campo logradouro não pode estar vazio.", icon=":material/error:")
             return False
 
         if len(clean_text) < 2:
-            st.error("O logradouro deve conter ao menos 2 caracteres.")
+            st.error("O logradouro deve conter ao menos 2 caracteres.", icon=":material/error:")
             return False
 
         # Verifica se existem caracteres que não deveriam estar em um nome de rua
         # Permite letras (incluindo acentuadas), números, espaços e hifens
         if not re.match(r'^[a-zA-Z0-9À-ÿ\s\-]+$', clean_text):
-            st.error("O logradouro contém caracteres inválidos. Utilize apenas letras, números e espaços.")
+            st.error("O logradouro contém caracteres inválidos. Utilize apenas letras, números e espaços.", icon=":material/error:")
             return False
             
         return True
@@ -146,37 +146,36 @@ class AddressSearchForm:
         """
         Orquestra a renderização dos inputs dentro de um formulário e container.
         """
-        cols = st.columns([0.05, 0.9, 0.05])
-        with cols[1]:
-            with st.container(border=True):
-                
-                    submit_button, logradouro, numero = self.form()
-                    if submit_button:
-                        
-                        #aqui precisa apagar o logradouro selecionado
-                        self.state_clean_up()
-                        
-                        if self.validate_logradouro(logradouro):
-                            dto = AddressSearchInputDTO(
-                                logradouro=logradouro,
-                                numero=numero,
-                                submitted=True
-                            )
-                            self.appstate.address_search_form_filled = True
-                            self.appstate.address_search_input = dto
-                            return dto        
+     
+        with st.container(border=True):
+            
+                submit_button, logradouro, numero = self.form()
+                if submit_button:
+                    
+                    #aqui precisa apagar o logradouro selecionado
+                    self.state_clean_up()
+                    
+                    if self.validate_logradouro(logradouro):
+                        dto = AddressSearchInputDTO(
+                            logradouro=logradouro,
+                            numero=numero,
+                            submitted=True
+                        )
+                        self.appstate.address_search_form_filled = True
+                        self.appstate.address_search_input = dto
+                        return dto        
+                else:
+                    if not self.appstate.address_search_form_filled:
+                        st.info("Preencha o formulário e clique em 'Consultar endereço' para iniciar a busca.", icon=":material/type_specimen:")
+                        st.stop()
                     else:
-                        if not self.appstate.address_search_form_filled:
-                            st.info("Preencha o formulário e clique em 'Consultar endereço' para iniciar a busca.")
-                            st.stop()
-                        else:
-                            #form já preenchido, apenas renderiza os dados atuais
-                            dto = AddressSearchInputDTO(
-                                logradouro=logradouro,
-                                numero=numero,
-                                submitted=True
-                            )
-                            return dto
+                        #form já preenchido, apenas renderiza os dados atuais
+                        dto = AddressSearchInputDTO(
+                            logradouro=logradouro,
+                            numero=numero,
+                            submitted=True
+                        )
+                        return dto
 
 
     def __call__(self)->AddressSearchInputDTO:

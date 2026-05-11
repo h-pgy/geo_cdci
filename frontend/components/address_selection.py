@@ -84,7 +84,7 @@ class ManualAddressSelectionComponent:
 
     def render(self, results: LogradouroSearchResultsDTO):
        
-        st.warning(f"Não encontramos um match exato para '{results.input_usuario_processado}'.")
+        st.warning(f"Não encontramos um match exato para '{results.input_usuario_processado}'.", icon=":material/check_alert:")
         space_form = st.empty()
         if not self.appstate.logradouro_already_selected:
             with space_form:

@@ -13,10 +13,11 @@ class LogradouroSearchProcessor:
         """
         Exibe feedback visual para buscas sem retorno.
         """
-        st.error(
-            f"Não localizamos nenhum logradouro com o termo informado: {input_original}. "
-            "Verifique a grafia ou tente um nome mais genérico."
-        )
+        with st.container(border=True):
+            st.error(
+                f"Não localizamos nenhum logradouro com o termo informado: {input_original}. "
+                "Verifique a grafia ou tente um nome mais genérico.", icon=":material/error:"
+            )
 
     def _build_results_dto(self, raw_matches: List[Dict], input_original:str) -> Optional[LogradouroSearchResultsDTO]:
         """
@@ -36,7 +37,7 @@ class LogradouroSearchProcessor:
                 match_100=any(m.score >= 100.0 for m in matches_list)
             )
         except (ValueError, KeyError, IndexError) as e:
-            st.error(f"Erro na estruturação dos dados de resposta: {str(e)}")
+            st.error(f"Erro na estruturação dos dados de resposta: {str(e)}", icon=":material/error:")
             return None
 
     def __call__(self, logradouro_input: str) -> Optional[LogradouroSearchResultsDTO]:
