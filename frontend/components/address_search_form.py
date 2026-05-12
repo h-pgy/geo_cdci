@@ -138,12 +138,8 @@ class AddressSearchForm:
             return submit_button, logradouro, numero
         
     def state_clean_up(self):
-        self.appstate.delete_key("selected_logradouro", namespace="address")
-        self.appstate.delete_key("logradouro_already_selected", namespace="address")
-        self.appstate.delete_key("logradouro_search_results", namespace="address")
-        self.appstate.delete_key("address_matched", namespace="address")
-        self.appstate.delete_key("address_matched_id", namespace="address")
-        self.appstate.delete_key("address_not_listed", namespace="address")
+        print('Cleaning namespace "address" in AppState')
+        self.appstate.clear_namespace('address')
 
     def render(self) -> AddressSearchInputDTO:
         """
@@ -170,7 +166,6 @@ class AddressSearchForm:
                 else:
                     if not self.appstate.address_search_form_filled:
                         st.info("Preencha o formulário e clique em 'Consultar endereço' para iniciar a busca.", icon=":material/type_specimen:")
-                        st.stop()
                     else:
                         #form já preenchido, apenas renderiza os dados atuais
                         dto = AddressSearchInputDTO(

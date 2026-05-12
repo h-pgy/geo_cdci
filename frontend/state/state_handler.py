@@ -2,24 +2,36 @@ import streamlit as st
 from typing import Any, List, Optional
 
 class AbstractAppState:
-    def _ensure_namespace(self, namespace: str):
-        if namespace not in st.session_state:
+    def _ensure_namespace(self, namespace: str|None):
+        if namespace is not None and namespace not in st.session_state:
             st.session_state[namespace] = {}
 
-    def set_value(self, key: str, value: Any, namespace: str = "default"):
+    def set_value(self, key: str, value: Any, namespace: Optional[str] = None):
         self._ensure_namespace(namespace)
-        st.session_state[namespace][key] = value
+        if namespace is None:
+            st.session_state[key] = value
+        else:
+            st.session_state[namespace][key] = value
 
-    def get_value(self, key: str, namespace: str = "default", default: Any = None) -> Any:
-        if namespace not in st.session_state:
+    def get_value(self, key: str, namespace: Optional[str] = None, default: Any = None) -> Any:
+
+        if namespace is not None and namespace not in st.session_state:
             return default
+        if namespace is None:
+            return st.session_state.get(key, default)
         return st.session_state[namespace].get(key, default)
 
-    def delete_key(self, key: str, namespace: str = "default"):
-        if namespace in st.session_state and key in st.session_state[namespace]:
-            del st.session_state[namespace][key]
+    def delete_key(self, key: str, namespace: Optional[str] = None):
+        if namespace is None:
+            if key in st.session_state:
+                del st.session_state[key]
+        else:
+            if namespace in st.session_state and key in st.session_state[namespace]:
+                del st.session_state[namespace][key]
 
-    def list_keys(self, namespace: str = "default") -> List[str]:
+    def list_keys(self, namespace: Optional[str] = None) -> List[str]:
+        if namespace is None:
+            return [str(key) for key in st.session_state.keys()]
         if namespace in st.session_state:
             return list(st.session_state[namespace].keys())
         return []

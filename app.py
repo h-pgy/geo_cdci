@@ -1,13 +1,13 @@
 import streamlit as st
 from frontend.components import (
     Header, 
+    TabControler,
     AddressSearchForm, LogradouroSearchProcessor, AddressSelectionHandler, PropertyMatchHandler
     )
 from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO
 from frontend.services.adress import get_address_matcher
 from frontend.services.data_loaders import get_df_enderecos_lotes
 import time
-from frontend.utils.scroll_to import AnchorManager
 
 from frontend.state import AppState
 
@@ -18,14 +18,15 @@ def main():
 
     state = AppState()
     state.write_namespace('address')
-    anchor_manager = AnchorManager(verbose=True) 
+    state.initialized = True
 
     #header
     render_header = Header()
     render_header()
 
-    anchor_manager.scroll_to_last_existing_anchor()
-    
+    tab_controler = TabControler(state)
+    tab_objs = tab_controler()
+        
     #--------------------------------------------
     # address fuzzy search functionality
 
@@ -34,61 +35,67 @@ def main():
     matcher_service = get_address_matcher(df_endereco_lotes)
 
     #search input form
-    address_form = AddressSearchForm(state)
-    address_data: AddressSearchInputDTO = address_form()
-    if not state.address_search_form_filled:
-        st.warning("Preencha o formulário de busca para iniciar a pesquisa de logradouro.")
-        st.stop()
 
-    anchor_manager.set_anchor('address_search')
-    anchor_manager.scroll_to_last_existing_anchor()
+    active_tab = tab_controler.active_tab_obj
+    st.write(f"Tab ativa: {active_tab.name}")
+    state.write_namespace("address")
+
+    tab_address_search = tab_objs["Busca de endereço"]
+    with tab_address_search.tab_widget:
+        tab_controler.tab_warning(tab_address_search)
+    
+        if tab_controler.is_tab_active_by_state(tab_address_search):
+            address_form = AddressSearchForm(state)
+            address_data: AddressSearchInputDTO = address_form()
+            if state.address_search_form_filled:
+                st.success("Formulário preenchido. Você pode prosseguir para a próxima etapa.", icon=":material/check_circle:")
+                tab_controler.define_active_tab()
+                
 
     #fuzzy match search for logradouro
+    tab_logradouro_search = tab_objs["Localização do logradouro"]
+    with tab_logradouro_search.tab_widget:
+        tab_controler.tab_warning(tab_logradouro_search)
 
-    search_processor = LogradouroSearchProcessor(matcher_service)
-    logradouro_input = state.address_search_input.logradouro
-    numero_input = state.address_search_input.numero
-    results_dto: LogradouroSearchResultsDTO | None = search_processor(logradouro_input)
-    space_logradouro = st.empty()
-    if not state.logradouro_already_selected:
-        selection_handler = AddressSelectionHandler(state, space_logradouro)
-        selection_handler(results_dto)
-    logradouro_selecionado = state.logradouro_selecionado
-    with space_logradouro:
-        with st.container(border=True):
-            if logradouro_selecionado is not None:
-                st.success(f"Logradouro selecionado: {logradouro_selecionado}", icon=":material/house:")
-            else:
-                st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.", icon=":material/error:")
-                st.stop()
-    
-    anchor_manager.set_anchor('logradouro_search_results')
-    anchor_manager.scroll_to_last_existing_anchor()
+        if tab_controler.is_tab_active_by_state(tab_logradouro_search):
+            #separa os espaços
+            space_logradour_perfect_match = st.empty()
+            space_logradouro_fuzzy_match = st.empty()
+            space_results_logradouro = st.empty()
+
+            #faz a busca fuzzy    
+            search_processor = LogradouroSearchProcessor(matcher_service)
+            logradouro_input = state.address_search_input.logradouro
+            numero_input = state.address_search_input.numero
+            results_dto: LogradouroSearchResultsDTO | None = search_processor(logradouro_input)
+            if not results_dto:
+                with space_results_logradouro:
+                    st.error("Ocorreu um erro durante a busca. Por favor, revise os dados de entrada e tente novamente.", icon=":material/error:")
+            #faz a escolha do logradouro
+            selection_handler = AddressSelectionHandler(state, space_logradour_perfect_match, space_logradouro_fuzzy_match, space_results_logradouro)
+            selection_handler(results_dto)
+        
         
     # property full address match
+    tab_property_match = tab_objs["Identificação do Imóvel"]
+    with tab_property_match.tab_widget:
+        tab_controler.tab_warning(tab_property_match)
 
-    space_property_match = st.empty()
-    anchor_manager.set_anchor('property_match')
-    anchor_manager.scroll_to_last_existing_anchor()
+        if tab_controler.is_tab_active_by_state(tab_property_match):
 
-    space_property_match_results = st.empty()
-    property_match_handler = PropertyMatchHandler(state, matcher_service, space_property_match)
-    id_selected_property = property_match_handler(logradouro_selecionado, numero_input)
+            #espaços
+            space_property_match = st.empty()
+            space_property_match_results = st.empty()   
 
-    with space_property_match_results:
-        with st.container(border=True):
-            if state.address_matched:
-                st.success(f"Endereço completo selecionado com ID: {id_selected_property}", icon=":material/house:")
-            elif state.address_not_listed:
-                st.warning("Endereço marcado como 'Não listado'. Por favor, siga as instruções para buscar seu endereço no mapa.", icon=":material/map:")
-            else:
-                st.error("Não foi possível encontrar um endereço correspondente ou próximo. Por favor, revise os dados de entrada e tente novamente.", icon=":material/error:")
-    
-    anchor_manager.set_anchor('property_match_results')
-    anchor_manager.scroll_to_last_existing_anchor()
-    
+            numero_input = state.address_search_input.numero
+            logradouro_selecionado = state.logradouro_selecionado
 
-    
+            if logradouro_selecionado is not None:
+                property_match_handler = PropertyMatchHandler(state, matcher_service, space_property_match, space_property_match_results)
+                id_selected_property = property_match_handler(logradouro_selecionado, numero_input)
+
+        
+        
 
 if __name__ =="__main__":
 

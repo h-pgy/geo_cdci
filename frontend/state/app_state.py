@@ -5,6 +5,14 @@ from frontend.dto import LogradouroMatchDTO, LogradouroSearchResultsDTO, Address
 class AppState(AbstractAppState):
 
     @property
+    def initialized(self) -> bool:
+        return self.get_value("initialized", namespace="address", default=True)
+    
+    @initialized.setter
+    def initialized(self, value: bool) -> None:
+        self.set_value("initialized", value)
+
+    @property
     def address_search_input(self) -> Optional[AddressSearchInputDTO]:
         return self.get_value("address_search_input", namespace="address")
     
@@ -39,7 +47,7 @@ class AppState(AbstractAppState):
 
     @property
     def logradouro_already_selected(self)->bool:
-        return self.get_value("logradouro_already_selected", namespace="address") or False
+        return self.get_value("logradouro_already_selected", namespace="address", default=False)
     
     @logradouro_already_selected.setter
     def logradouro_already_selected(self, value: bool)->None:
@@ -47,7 +55,7 @@ class AppState(AbstractAppState):
 
     @property
     def address_matched(self)->bool:
-        return self.get_value("address_matched", namespace="address") or False
+        return self.get_value("address_matched", namespace="address", default=False)
     
     @address_matched.setter
     def address_matched(self, value: bool)->None:
@@ -63,7 +71,7 @@ class AppState(AbstractAppState):
 
     @property
     def address_not_listed(self)->bool:
-        return self.get_value("address_not_listed", namespace="address") or False
+        return self.get_value("address_not_listed", namespace="address", default=False)
     
     @address_not_listed.setter
     def address_not_listed(self, value:bool)->None:

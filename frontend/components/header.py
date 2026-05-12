@@ -12,7 +12,7 @@ class Header:
         Define as configurações básicas da página no navegador.
         """
         st.set_page_config(
-            page_title="GEOCDCI - Certidão Automática de Dados Cadastrais do Imóvel",
+            page_title="GEOCEL - Certidão Automática de Existência de Lançamento de IPTU",
             page_icon="🏙️",
             layout="wide"
         )
@@ -21,8 +21,8 @@ class Header:
         """
         Renderiza o cabeçalho principal com o nome completo do sistema.
         """
-        st.header("GeoCDCI", text_alignment='center')
-        st.subheader("Certidão Automática de Dados Cadastrais do Imóvel", text_alignment='center')
+        st.header("GEOCEL", text_alignment='center')
+        st.subheader("Certidão Automática de Existência de Lançamento de IPTU", text_alignment='center')
 
     def render_description(self):
         """

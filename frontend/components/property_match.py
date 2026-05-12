@@ -7,12 +7,12 @@ import time
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 
 class PropertyMatchHandler:
-    def __init__(self, state:AppState, address_matcher:AddressMatcher, space:StreamlitWidget) -> None:
+    def __init__(self, state:AppState, address_matcher:AddressMatcher, search_space:StreamlitWidget, results_space:StreamlitWidget) -> None:
         self.state = state
         self.address_matcher = address_matcher
-        self.space = space
+        self.search_space = search_space
+        self.results_space = results_space
 
-            
     def _check_busca_endereco_filled(self, edited_df:pd.DataFrame, button_buscar_clicado:bool)->bool:
 
         if button_buscar_clicado:
@@ -30,6 +30,7 @@ class PropertyMatchHandler:
             return False
 
     def _check_endereco_not_listed(self, button_nao_encontrado_clicado:bool)->bool:
+
         if button_nao_encontrado_clicado:
             st.info('Será necessário realizar a busca pelo mapa para encontrar seu endereço. Por favor, siga as instruções para buscar seu endereço no mapa.', icon=":material/map:")
             self.state.address_matched = False
@@ -46,6 +47,12 @@ class PropertyMatchHandler:
             return "Buscar novo endereço", ":material/search:"
         else:
             return "Selecionar endereço", ":material/check_box:"
+        
+    def clean_up_state(self):
+
+        self.state.delete_key("address_matched", namespace="address")
+        self.state.delete_key("address_matched_id", namespace="address")
+        self.state.delete_key("address_not_listed", namespace="address")
         
     def data_editor_property_choice(self, df_matches:pd.DataFrame)->int|None:
         
@@ -79,7 +86,10 @@ class PropertyMatchHandler:
 
                             check_submitted_data = self._check_busca_endereco_filled(edited_df, button_buscar_clicado)
                             if not check_submitted_data:
-                                st.stop()
+                                return None
+                            if check_submitted_data:
+                                self.clean_up_state()
+                                st.success("Endereço selecionado com sucesso!", icon=":material/house:")
 
         index_selecionado = edited_df[edited_df["Escolha"]].index[0]
 
@@ -136,13 +146,13 @@ class PropertyMatchHandler:
         try:
             numero = int(numero)
         except ValueError:
-            with self.form_results_space:
+            with self.results_space:
                 st.error(f"Número de porta {numero} não é um valor numérico. Não é possível realizar a busca por vizinhos mais próximos.", icon=":material/error:")
             return None
         
         df_vizinhos_proximos = self.address_matcher.get_nearest_neighbor_addresses(logradouro, numero)
         if df_vizinhos_proximos is None or df_vizinhos_proximos.empty:
-            with self.form_results_space:
+            with self.results_space:
                 st.error(f"Nenhum endereço encontrado para o logradouro fornecido ({logradouro}) com o número ({numero}). Por favor, revise o logradouro e tente novamente.", icon=":material/error:")
             return None
         
@@ -152,7 +162,7 @@ class PropertyMatchHandler:
             return None
 
         match_selecionado: pd.Series = df_vizinhos_proximos.loc[index_selecionado]
-        with self.form_results_space:
+        with self.results_space:
             st.success(f"Endereço mais próximo selecionado: {match_selecionado['nm_logradouro_completo']}, {match_selecionado['cd_numero_porta']}", icon=":material/house:")
         return match_selecionado["cd_identificador"]
     
@@ -181,14 +191,14 @@ class PropertyMatchHandler:
             self.state.delete_key("address_matched_id", namespace="address")
 
     def results_tag(self)->int|None:
-        with self.form_results_space:
-            with st.container():
+
+        with self.results_space:
+            with st.container(border=True):
                 st.write('##### Resultados da busca por endereço completo')
                 with st.container():
                     if self.state.address_matched and self.state.address_matched_id is not None:
                         st.success(f"Endereço completo encontrado com ID: {self.state.address_matched_id}", icon=":material/house:")
                         return self.state.address_matched_id
-
                     elif self.state.address_not_listed:
                         st.warning("Endereço marcado como 'Não listado'. Por favor, selecione um novo endereço ou siga as instruções para buscar seu endereço no mapa.", icon=":material/map:")
                     else:
@@ -196,13 +206,12 @@ class PropertyMatchHandler:
 
     def __call__(self, logradouro:str, numero:str)->int|None:
         """Dado um logradouro e número, busca o endereço mais próximo na base de dados e atualiza o estado do app."""
-        with self.space:
+        with self.search_space:
             with st.container(border=True):
                 st.markdown("#### Buscando correspondência para o endereço completo... :material/house:")
                 with st.container(border=True):
                     self.exact_match_space = st.empty()
                     self.form_space = st.empty()
-                    self.form_results_space = st.empty()
                     id_match = self.run_search(logradouro, numero)
             self.save_results_to_state(id_match)
         
