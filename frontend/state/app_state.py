@@ -60,3 +60,11 @@ class AppState(AbstractAppState):
     @address_matched_id.setter
     def address_matched_id(self, value:int)->None:
         self.set_value("address_matched_id", value, namespace="address")
+
+    @property
+    def address_not_listed(self)->bool:
+        return self.get_value("address_not_listed", namespace="address") or False
+    
+    @address_not_listed.setter
+    def address_not_listed(self, value:bool)->None:
+        self.set_value("address_not_listed", value, namespace="address")

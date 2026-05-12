@@ -7,18 +7,25 @@ from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO
 from frontend.services.adress import get_address_matcher
 from frontend.services.data_loaders import get_df_enderecos_lotes
 import time
+from frontend.utils.scroll_to import AnchorManager
 
 from frontend.state import AppState
+
+        
 
 def main():
     '''Renderiza o app'''
 
     state = AppState()
     state.write_namespace('address')
+    anchor_manager = AnchorManager(verbose=True) 
+
     #header
     render_header = Header()
     render_header()
 
+    anchor_manager.scroll_to_last_existing_anchor()
+    
     #--------------------------------------------
     # address fuzzy search functionality
 
@@ -32,6 +39,9 @@ def main():
     if not state.address_search_form_filled:
         st.warning("Preencha o formulário de busca para iniciar a pesquisa de logradouro.")
         st.stop()
+
+    anchor_manager.set_anchor('address_search')
+    anchor_manager.scroll_to_last_existing_anchor()
 
     #fuzzy match search for logradouro
 
@@ -51,15 +61,31 @@ def main():
             else:
                 st.warning("Nenhum logradouro selecionado. Por favor, revise os resultados da busca.", icon=":material/error:")
                 st.stop()
+    
+    anchor_manager.set_anchor('logradouro_search_results')
+    anchor_manager.scroll_to_last_existing_anchor()
         
     # property full address match
 
-    if not state.address_matched:
-        property_match_handler = PropertyMatchHandler(state, matcher_service)
-        id_selected_property = property_match_handler(logradouro_selecionado, numero_input)
+    space_property_match = st.empty()
+    anchor_manager.set_anchor('property_match')
+    anchor_manager.scroll_to_last_existing_anchor()
 
-    st.success(f"Endereço completo selecionado com ID: {id_selected_property}", icon=":material/house_with_garden:")
+    space_property_match_results = st.empty()
+    property_match_handler = PropertyMatchHandler(state, matcher_service, space_property_match)
+    id_selected_property = property_match_handler(logradouro_selecionado, numero_input)
 
+    with space_property_match_results:
+        with st.container(border=True):
+            if state.address_matched:
+                st.success(f"Endereço completo selecionado com ID: {id_selected_property}", icon=":material/house:")
+            elif state.address_not_listed:
+                st.warning("Endereço marcado como 'Não listado'. Por favor, siga as instruções para buscar seu endereço no mapa.", icon=":material/map:")
+            else:
+                st.error("Não foi possível encontrar um endereço correspondente ou próximo. Por favor, revise os dados de entrada e tente novamente.", icon=":material/error:")
+    
+    anchor_manager.set_anchor('property_match_results')
+    anchor_manager.scroll_to_last_existing_anchor()
     
 
     
