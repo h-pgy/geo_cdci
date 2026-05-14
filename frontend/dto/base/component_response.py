@@ -13,6 +13,7 @@ class BaseComponentResponse(BaseModel, Generic[T]):
     data: Optional[T] = None
     message: Optional[ComponentMessage] = None
     error: Optional[ComponentError] = None
+    component_name: str
 
     def _validate_error_state(self):
         """Valida restrições para o sinal de erro crítico."""

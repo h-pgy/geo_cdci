@@ -17,6 +17,7 @@ class UIComponent(ABC, Generic[T]):
     input_type: Optional[Type[BaseModel]] = None
     output_type: Optional[Type[BaseModel]] = None
     user_error_msg: str = "Ocorreu uma falha técnica ao carregar este componente."
+    name: str = "BaseComponent"
 
     @abstractmethod
     def _render(
@@ -25,6 +26,19 @@ class UIComponent(ABC, Generic[T]):
         input_dto: Optional[BaseModel]
     ) -> BaseComponentResponse[T]:
         pass
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+        cls._validate_class_name()
+
+    @classmethod
+    def _validate_class_name(cls):
+        # 1. Verifica se o nome foi alterado
+        if cls.name == "BaseComponent":
+            raise ValueError(
+                f"A classe '{cls.__name__}' não definiu um nome único. "
+                "Por favor, sobrescreva o atributo 'name'."
+            )
 
     def _validate_input(self, input_dto: Optional[BaseModel]) -> None:
         if self.input_type is None:
@@ -87,7 +101,8 @@ class UIComponent(ABC, Generic[T]):
             error=ComponentError(
                 internal_message=internal_msg,
                 user_message=self.user_error_msg
-            )
+            ),
+            component_name=self.name
         )
 
     def __call__(
