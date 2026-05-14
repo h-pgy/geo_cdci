@@ -1,15 +1,15 @@
 import streamlit as st
-from frontend.components import (
+from frontend_deprecated.components import (
     Header, 
     TabControler,
     AddressSearchForm, LogradouroSearchProcessor, AddressSelectionHandler, PropertyMatchHandler
     )
-from frontend.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO
-from frontend.services.adress import get_address_matcher
-from frontend.services.data_loaders import get_df_enderecos_lotes
+from frontend_deprecated.dto import AddressSearchInputDTO, LogradouroSearchResultsDTO
+from frontend_deprecated.services.adress import get_address_matcher
+from frontend_deprecated.services.data_loaders import get_df_enderecos_lotes
 import time
 
-from frontend.state import AppState
+from frontend_deprecated.state import AppState
 
         
 
