@@ -10,6 +10,8 @@ from frontend.dto.base import (
     AppFlowSignal
 )
 
+from frontend.utils.message import render_message
+
 T = TypeVar('T', bound=BaseModel)
 
 class UIComponent(ABC, Generic[T]):
@@ -104,6 +106,10 @@ class UIComponent(ABC, Generic[T]):
             ),
             component_name=self.name
         )
+    
+    def _render_message(self, response: BaseComponentResponse[Any], container: StreamlitWidget) -> None:
+        if response.message:
+            render_message(response.message, container)
 
     def __call__(
         self, 
@@ -117,7 +123,9 @@ class UIComponent(ABC, Generic[T]):
             try:
                 self._validate_input(input_dto)
                 response = self._render(target, input_dto)
+                response.component_name = self.name
                 self._validate_output(response)
+                self._render_message(response, target)
                 return response
                 
             except Exception as e:

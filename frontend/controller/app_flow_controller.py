@@ -1,9 +1,10 @@
 from frontend.state import AppState
-from frontend.dto.base import BaseComponentResponse, AppFlowSignal, AppSection
+from frontend.dto.base import BaseComponentResponse, AppFlowSignal
+from .section import AppSection
 from typing import Dict, Optional, Any
 from pydantic import BaseModel
 
-class FlowController:
+class AppFlowController:
     """
     O motor de inteligência da aplicação. 
     Valida dependências, gerencia a cascata de invalidação e executa os componentes.
@@ -12,7 +13,7 @@ class FlowController:
         self.state = state
         self._sections: Dict[str, AppSection] = {}
 
-    def register(self, section: AppSection) -> "FlowController":
+    def register(self, section: AppSection) -> "AppFlowController":
         """Registra uma seção no catálogo do controlador."""
         self._sections[section.name] = section
         return self
