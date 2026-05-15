@@ -3,6 +3,7 @@ from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from frontend.dto.address_input import AddressInputDTO
 from frontend.dto.header import HeaderRenderedDTO
 from frontend.utils import message
+import re
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 
@@ -13,17 +14,140 @@ class AddressForm(UIComponent[AddressInputDTO]):
     input_type=HeaderRenderedDTO
     output_type=AddressInputDTO
 
+    def logradouro_input(self):
+        """
+        Renderiza o campo de texto para o nome da rua.
+        """
+        return st.text_input(
+            "Logradouro",
+            key="logradouro_input",
+            placeholder="Ex: Avenida Paulista ou Rua Direita",
+            help="O logradouro é o nome da rua, avenida, praça ou alameda onde o imóvel está localizado."
+        )
+
+    def numero_input(self):
+        """
+        Renderiza o campo numérico para a porta do imóvel.
+        """
+
+        return st.number_input(
+            "Número",
+            key="numero_input",
+            min_value=1,
+            step=1,
+            help="Este é o número oficial da rua. Caso o seu imóvel seja um apartamento ou sala em um prédio, "
+                 "digite o número principal do edifício. Você poderá detalhar a unidade mais adiante."
+        )
+    
+    def help_logradouro(self):
+        """
+        Explicação detalhada sobre a identificação do logradouro.
+        """
+        with st.popover("Dúvidas sobre o logradouro?"):
+            st.write(
+                "O logradouro é o nome oficial da via (rua, avenida, praça, etc.) onde o imóvel está registrado. "
+                "É necessário preencher este campo para que o sistema localize a face de quadra correspondente no mapa da cidade."
+            )
+            st.write(
+                "O nome digitado passará por uma conferência automática com a base oficial da Prefeitura. "
+                "Caso existam variações na escrita, o sistema apresentará as opções mais prováveis para sua escolha."
+            )
+
+    def help_numero(self):
+        """
+        Explicação detalhada sobre a numeração do imóvel.
+        """
+        with st.popover("Dúvidas sobre o número?"):
+            st.write(
+                "Utilizamos o número da porta para identificar a posição exata do imóvel dentro do logradouro. "
+                "Esta informação é cruzada com o Cadastro Imobiliário Fiscal para vincular os dados do proprietário e as características do lote."
+            )
+            st.write(
+                "Para condomínios ou edifícios, utilize o número principal da entrada. "
+                "A localização precisa é fundamental para que o sistema gere o perímetro georreferenciado que constará na sua certidão."
+            )
+
+    def validate_logradouro(self, logradouro: str|None, container: StreamlitWidget) -> bool:
+        """
+        Valida se o logradouro possui apenas caracteres válidos e conteúdo suficiente.
+        """
+
+        if logradouro is None or len(logradouro)==0:
+            container.error("O campo logradouro é obrigatório.")
+            return False
+        
+        clean_text = str(logradouro).strip()
+        
+        if not clean_text:
+            container.error("O campo logradouro não pode estar vazio.", icon=":material/error:")
+            return False
+
+        if len(clean_text) < 2:
+            container.error("O logradouro deve conter ao menos 2 caracteres.", icon=":material/error:")
+            return False
+
+        # Verifica se existem caracteres que não deveriam estar em um nome de rua
+        # Permite letras (incluindo acentuadas), números, espaços e hifens
+        if not re.match(r'^[a-zA-Z0-9À-ÿ\s\-]+$', clean_text):
+            container.error("O logradouro contém caracteres inválidos. Utilize apenas letras, números e espaços.", icon=":material/error:")
+            return False
+            
+        return True
+    
+
+    def define_submit_text(self)->str:
+        """
+        Define o texto do botão de submit com base no estado atual do formulário.
+        """
+        if self.previous_response is None:
+            return "Consultar endereço"
+        else:
+            return "Atualizar busca"
+    
+    def define_submit_icon(self)->str:
+            """
+            Define o ícone do botão de submit com base no estado atual do formulário.
+            """
+            if self.previous_response is None:
+                return ":material/search:"
+            else:
+                return ":material/refresh:"
+    
+    def form(self):
+
+        st.write("Identificação do Imóvel")
+                
+        with st.form(key="address_search_form", clear_on_submit=False):
+            cols =  st.columns([0.75, 0.25])
+            with cols[0]:
+                logradouro = self.logradouro_input()
+            with cols[1]:
+                self.help_logradouro()
+            cols = st.columns([0.75, 0.25])
+            with cols[0]:
+                numero = self.numero_input()
+            with cols[1]:
+                self.help_numero()
+
+            submit_text = self.define_submit_text()
+            submit_icon = self.define_submit_icon()
+            submit_button = st.form_submit_button(submit_text, icon=submit_icon)
+            return submit_button, logradouro, numero
+
     def _render(self, container: StreamlitWidget, input_dto: HeaderRenderedDTO) -> BaseComponentResponse[AddressInputDTO]:
 
-        with container.form(key="address_form"):
-            st.write("### Insira o endereço do imóvel")
-            st.write("Preencha os campos abaixo para iniciar o processo de geocodificação e emissão de certidões.")
+        internal_container = container.container(border=True)
+        internal_container.write("### Insira o endereço do imóvel")
+        internal_container.write("Preencha os campos abaixo para iniciar o processo de geocodificação e emissão de certidões.")
+        with internal_container.form(key="address_form"):
+            
             logradouro = st.text_input("Logradouro", placeholder="Ex: Avenida Paulista")
             numero = st.number_input("Número", placeholder="Ex: 1000")
     
             submit_button = st.form_submit_button(label="Enviar")
 
         if submit_button:
+            self.validate_logradouro(logradouro, internal_container)
             address_data = AddressInputDTO(
                 logradouro=logradouro,
                 numero=int(numero)

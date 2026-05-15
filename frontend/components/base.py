@@ -11,6 +11,7 @@ from frontend.dto.base import (
 )
 
 from frontend.utils.message import render_message
+from frontend.state import AppState
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -20,6 +21,7 @@ class UIComponent(ABC, Generic[T]):
     output_type: Optional[Type[BaseModel]] = None
     user_error_msg: str = "Ocorreu uma falha técnica ao carregar este componente."
     name: str = "BaseComponent"
+    previous_response: Optional[BaseComponentResponse[Any]] = None
 
     @abstractmethod
     def _render(
@@ -111,14 +113,24 @@ class UIComponent(ABC, Generic[T]):
         if response.message:
             render_message(response.message, container)
 
+    def _inject_previous_response(self, state: AppState) -> None:
+
+        previous_response = state.get_response(self.name)
+        if previous_response:
+            previous_response = self._validate_output(previous_response)
+            self.previous_response = previous_response
+
     def __call__(
         self, 
         container: StreamlitWidget, 
+        state: AppState,
         input_dto: Optional[BaseModel] = None,
         use_container: bool = True
     ) -> BaseComponentResponse[T]:
         target = container.container() if use_container else container
         
+        #ai posso usar a resposta anterior dentro do componente como quiser
+        self._inject_previous_response(state)
         with target:
             try:
                 self._validate_input(input_dto)

@@ -16,13 +16,11 @@ def main():
     form_space = st.empty()
 
     header = AppSection(
-        name="Header",
         container=header_space,
         component=Header(),
     )
 
     address_form = AppSection(
-        name="AddressForm",
         container=form_space,
         component=AddressForm(),
     )
@@ -32,8 +30,8 @@ def main():
     controller.register(header)
     controller.register(address_form)
 
-    controller.trigger_section("Header")        
-    controller.trigger_section("AddressForm")
+    controller.trigger_section(header)        
+    controller.trigger_section(address_form)
 
     
 

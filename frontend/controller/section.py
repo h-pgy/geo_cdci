@@ -11,12 +11,15 @@ class AppSection(BaseModel):
     """
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    name: str
     component: UIComponent
     container: StreamlitWidget
     initial_data: Optional[BaseModel] = None
     
     _depends_on_sections: List["AppSection"] = PrivateAttr(default_factory=list)
+
+    @property
+    def name(self) -> str:
+        return self.component.name
 
     @property
     def depends_on_names(self) -> Set[str]:

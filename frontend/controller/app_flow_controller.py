@@ -29,16 +29,17 @@ class AppFlowController:
                 return False
         return True
 
-    def _invalidate_downstream(self, altered_section_name: str):
+    def _invalidate_downstream(self, altered_section: AppSection):
         """
         Percorre as seções registradas e remove do estado as respostas 
         de quem depende da seção alterada.
         """
+        altered_section_name = altered_section.name
         for name, section in self._sections.items():
             if altered_section_name in section.depends_on_names:
                 self.state.delete_response(name)
                 # Recursividade para limpar a cascata à frente
-                self._invalidate_downstream(name)
+                self._invalidate_downstream(section)
 
     def _resolve_input(self, section: AppSection) -> Optional[BaseModel]:
         """
@@ -53,32 +54,32 @@ class AppFlowController:
         parent_resp = self.state.get_response(first_dep)
         return parent_resp.data if parent_resp else None
 
-    def trigger_section(self, name: str) -> Optional[BaseComponentResponse[Any]]:
+    def trigger_section(self, section: AppSection) -> Optional[BaseComponentResponse[Any]]:
         """
         Tenta renderizar e processar uma seção específica.
         """
-        section = self._sections.get(name)
-        if not section:
-            raise ValueError(f"Section '{name}' não foi registrada.")
+        section_interna = self._sections.get(section.name)
+        if not section_interna:
+            raise ValueError(f"Section '{section.name}' não foi registrada.")
 
         # 1. Validação de Dependências
-        if not self._check_dependencies(section):
+        if not self._check_dependencies(section_interna):
             return None
 
         # 2. Resolução de Input
-        input_dto = self._resolve_input(section)
-
+        input_dto = self._resolve_input(section_interna)
         # 3. Execução do Componente (via interface UIComponent)
-        response = section.component(
-            container=section.container,
-            input_dto=input_dto
+        response = section_interna.component(
+            container=section_interna.container,
+            input_dto=input_dto,
+            state=self.state
         )
 
         # 4. Se o sinal não for GO, invalida tudo o que depende desta seção
         if response.signal != AppFlowSignal.GO:
-            self._invalidate_downstream(name)
+            self._invalidate_downstream(section_interna)
 
         # 5. Persistência da Resposta Completa
-        self.state.store_response(name, response)
+        self.state.store_response(section_interna.name, response)
 
         return response
