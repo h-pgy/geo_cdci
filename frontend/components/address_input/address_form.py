@@ -99,19 +99,19 @@ class AddressForm(UIComponent[AddressInputDTO]):
         """
         Define o texto do botão de submit com base no estado atual do formulário.
         """
-        if self.previous_response is None:
-            return "Consultar endereço"
-        else:
+        if self.previous_response is not None:
             return "Atualizar busca"
+        else:
+            return "Consultar Endereço"
     
     def define_submit_icon(self)->str:
             """
             Define o ícone do botão de submit com base no estado atual do formulário.
             """
-            if self.previous_response is None:
-                return ":material/search:"
-            else:
+            if self.previous_response is not None:
                 return ":material/refresh:"
+            else:
+                return ":material/search:"
     
     def form(self, container: StreamlitWidget) -> tuple[bool, str|None, int|None]:
 
@@ -151,7 +151,7 @@ class AddressForm(UIComponent[AddressInputDTO]):
             return BaseComponentResponse(
                 signal=AppFlowSignal.GO,
                 data=address_data,
-                message=message.success_message("Endereço enviado com sucesso! Iniciando processamento...",  duration=3)
+                message=message.success_message("Endereço enviado com sucesso! Iniciando processamento...",  duration=1)
             )
 
         return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message("Aguardando o envio do endereço para iniciar o processamento."))
