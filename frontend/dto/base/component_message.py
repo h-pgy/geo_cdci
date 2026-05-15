@@ -14,3 +14,4 @@ class ComponentMessage(BaseModel):
     title: Optional[str] = None
     body: str
     status: MessageType
+    duration: Optional[int] = None  # Duração em segundos para exibir a mensagem, se aplicável

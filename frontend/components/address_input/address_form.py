@@ -113,38 +113,34 @@ class AddressForm(UIComponent[AddressInputDTO]):
             else:
                 return ":material/refresh:"
     
-    def form(self):
+    def form(self, container: StreamlitWidget) -> tuple[bool, str|None, int|None]:
 
-        st.write("Identificação do Imóvel")
-                
-        with st.form(key="address_search_form", clear_on_submit=False):
-            cols =  st.columns([0.75, 0.25])
-            with cols[0]:
-                logradouro = self.logradouro_input()
-            with cols[1]:
-                self.help_logradouro()
-            cols = st.columns([0.75, 0.25])
-            with cols[0]:
-                numero = self.numero_input()
-            with cols[1]:
-                self.help_numero()
+        container.write("Identificação do Imóvel")
+        with container:
+            with st.form(key="address_search_form", clear_on_submit=False):
+                cols =  st.columns([0.75, 0.25])
+                with cols[0]:
+                    logradouro = self.logradouro_input()
+                with cols[1]:
+                    self.help_logradouro()
+                cols = st.columns([0.75, 0.25])
+                with cols[0]:
+                    numero = self.numero_input()
+                with cols[1]:
+                    self.help_numero()
 
-            submit_text = self.define_submit_text()
-            submit_icon = self.define_submit_icon()
-            submit_button = st.form_submit_button(submit_text, icon=submit_icon)
-            return submit_button, logradouro, numero
+                submit_text = self.define_submit_text()
+                submit_icon = self.define_submit_icon()
+                submit_button = st.form_submit_button(submit_text, icon=submit_icon)
+                return submit_button, logradouro, numero
 
     def _render(self, container: StreamlitWidget, input_dto: HeaderRenderedDTO) -> BaseComponentResponse[AddressInputDTO]:
 
         internal_container = container.container(border=True)
         internal_container.write("### Insira o endereço do imóvel")
         internal_container.write("Preencha os campos abaixo para iniciar o processo de geocodificação e emissão de certidões.")
-        with internal_container.form(key="address_form"):
-            
-            logradouro = st.text_input("Logradouro", placeholder="Ex: Avenida Paulista")
-            numero = st.number_input("Número", placeholder="Ex: 1000")
-    
-            submit_button = st.form_submit_button(label="Enviar")
+        
+        submit_button, logradouro, numero = self.form(internal_container)
 
         if submit_button:
             self.validate_logradouro(logradouro, internal_container)
@@ -155,7 +151,7 @@ class AddressForm(UIComponent[AddressInputDTO]):
             return BaseComponentResponse(
                 signal=AppFlowSignal.GO,
                 data=address_data,
-                message=message.success_message("Endereço enviado com sucesso! Iniciando processamento...")
+                message=message.success_message("Endereço enviado com sucesso! Iniciando processamento...",  duration=3)
             )
 
         return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message("Aguardando o envio do endereço para iniciar o processamento."))

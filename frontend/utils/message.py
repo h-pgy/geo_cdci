@@ -1,46 +1,57 @@
 from frontend.dto.base import ComponentMessage, MessageType
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
+import time
 
-def error_message(body:str, title:str|None=None) -> ComponentMessage:
+def error_message(body:str, title:str|None=None, duration:int|None=None) -> ComponentMessage:
     return ComponentMessage(
         title=title,
         body=body,
-        status=MessageType.ERROR
+        status=MessageType.ERROR,
+        duration=duration
     )
 
-def warning_message(body:str, title:str|None=None) -> ComponentMessage:
+def warning_message(body:str, title:str|None=None, duration:int|None=None) -> ComponentMessage:
     return ComponentMessage(
         title=title,
         body=body,
-        status=MessageType.WARNING
+        status=MessageType.WARNING,
+        duration=duration
     )
 
-def success_message(body:str, title:str|None=None) -> ComponentMessage:
+def success_message(body:str, title:str|None=None, duration:int|None=None) -> ComponentMessage:
     return ComponentMessage(
         title=title,
         body=body,
-    status=MessageType.SUCCESS
+        status=MessageType.SUCCESS,
+        duration=duration
 )
 
-def info_message(body:str, title:str|None=None) -> ComponentMessage:
+def info_message(body:str, title:str|None=None, duration:int|None=None) -> ComponentMessage:
     return ComponentMessage(
         title=title,
         body=body,
-        status=MessageType.INFO
+        status=MessageType.INFO,
+        duration=duration
     )
 
-def render_message(message: ComponentMessage, container: StreamlitWidget):
+def render_message(message: ComponentMessage, container: StreamlitWidget) -> None:
 
     if not isinstance(message, ComponentMessage):
         raise TypeError(f"Esperado ComponentMessage, mas recebeu {type(message).__name__}")
 
+    space = container.empty()
     if message.status == MessageType.ERROR:
-        container.error(message.body)
+        space.error(message.body)
     elif message.status == MessageType.WARNING:
-        container.warning(message.body)
+        space.warning(message.body)
     elif message.status == MessageType.SUCCESS:
-        container.success(message.body)
+        space.success(message.body)
     elif message.status == MessageType.INFO:
-        container.info(message.body)
+        space.info(message.body)
     else:
         raise NotImplementedError(f"Tipo de mensagem desconhecido: {message.status}")
+    
+    duration = message.duration
+    if duration:
+        time.sleep(duration)
+        space.empty()  # Limpa a mensagem após o tempo definido

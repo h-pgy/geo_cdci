@@ -117,6 +117,7 @@ class UIComponent(ABC, Generic[T]):
 
         previous_response = state.get_response(self.name)
         if previous_response:
+            print('Injetando resposta anterior no componente', self.name)
             previous_response = self._validate_output(previous_response)
             self.previous_response = previous_response
 
