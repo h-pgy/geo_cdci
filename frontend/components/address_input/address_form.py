@@ -6,6 +6,10 @@ from frontend.utils import message
 import re
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
+import time
+from frontend.config import settings
+
+ERROR_MSG_DURATION_SECONDS = settings.ERROR_MSG_DURATION_SECONDS
 
 class AddressForm(UIComponent[AddressInputDTO]):
 
@@ -73,23 +77,23 @@ class AddressForm(UIComponent[AddressInputDTO]):
         """
 
         if logradouro is None or len(logradouro)==0:
-            container.error("O campo logradouro é obrigatório.")
+            self.flash_message(container, "O campo logradouro é obrigatório.", type="error")
             return False
         
         clean_text = str(logradouro).strip()
         
         if not clean_text:
-            container.error("O campo logradouro não pode estar vazio.", icon=":material/error:")
+            self.flash_message(container, "O campo logradouro não pode estar vazio.", type="error")
             return False
 
         if len(clean_text) < 2:
-            container.error("O logradouro deve conter ao menos 2 caracteres.", icon=":material/error:")
+            self.flash_message(container, "O logradouro deve conter ao menos 2 caracteres.", type="error")
             return False
 
         # Verifica se existem caracteres que não deveriam estar em um nome de rua
         # Permite letras (incluindo acentuadas), números, espaços e hifens
         if not re.match(r'^[a-zA-Z0-9À-ÿ\s\-]+$', clean_text):
-            container.error("O logradouro contém caracteres inválidos. Utilize apenas letras, números e espaços.", icon=":material/error:")
+            self.flash_message(container, "O logradouro contém caracteres inválidos. Utilize apenas letras, números e espaços.")
             return False
             
         return True

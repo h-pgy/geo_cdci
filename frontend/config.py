@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     #imagens
     BANNER_IMG: str = "banner.png"
 
+    #misc
+    ERROR_MSG_DURATION_SECONDS: int = 1
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

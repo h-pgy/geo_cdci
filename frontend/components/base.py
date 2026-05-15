@@ -12,6 +12,10 @@ from frontend.dto.base import (
 
 from frontend.utils.message import render_message
 from frontend.state import AppState
+from frontend.config import settings
+import time
+
+ERROR_MSG_DURATION_SECONDS = settings.ERROR_MSG_DURATION_SECONDS
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -121,25 +125,52 @@ class UIComponent(ABC, Generic[T]):
             self._validate_output(previous_response)
             self.previous_response = previous_response
 
+    def flash_message(self, container:StreamlitWidget, message:str, type:str="info"):
+        """
+        Exibe uma mensagem de erro de validação dentro do formulário.
+        """
+        msg_espace = container.empty()
+        if type == "error":
+            msg_espace.error(message, icon=":material/error:")
+        elif type == "success":
+            msg_espace.success(message, icon=":material/check:")
+        elif type == "warning":
+            msg_espace.warning(message, icon=":material/warning:")
+        else:
+            msg_espace.info(message)
+
+        #apaga a msg
+        time.sleep(ERROR_MSG_DURATION_SECONDS)
+        msg_espace.empty()
+
+    @st.fragment
+    def _fragment_render(self, target: StreamlitWidget, input_dto: Optional[BaseModel]) -> BaseComponentResponse[T]:
+
+        internal_container = target.container()
+        try:
+            self._validate_input(input_dto)
+            response = self._render(internal_container, input_dto)
+            response.component_name = self.name
+            self._validate_output(response)
+            self._render_message(response, internal_container)
+
+            return response
+
+        except Exception as e:
+            return self._handle_exception(internal_container, e)
+
     def __call__(
         self, 
         container: StreamlitWidget, 
         state: AppState,
         input_dto: Optional[BaseModel] = None,
-        use_container: bool = True
     ) -> BaseComponentResponse[T]:
-        target = container.container() if use_container else container
         
         #ai posso usar a resposta anterior dentro do componente como quiser
         self._inject_previous_response(state)
-        with target:
+        with container:
             try:
-                self._validate_input(input_dto)
-                response = self._render(target, input_dto)
-                response.component_name = self.name
-                self._validate_output(response)
-                self._render_message(response, target)
+                response = self._fragment_render(container, input_dto)
                 return response
-                
             except Exception as e:
-                return self._handle_exception(target, e)
+                return self._handle_exception(container, e)
