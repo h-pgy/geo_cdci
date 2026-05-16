@@ -140,6 +140,9 @@ class AddressForm(UIComponent[AddressInputDTO]):
 
     def _render(self, container: StreamlitWidget, input_dto: HeaderRenderedDTO) -> BaseComponentResponse[AddressInputDTO]:
 
+        if not input_dto.rendered:
+            return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message("Aguardando o carregamento do cabeçalho para exibir o formulário de endereço."))
+
         internal_container = container.container(border=True)
         internal_container.write("### Insira o endereço do imóvel")
         internal_container.write("Preencha os campos abaixo para iniciar o processo de geocodificação e emissão de certidões.")

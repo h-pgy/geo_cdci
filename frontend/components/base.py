@@ -158,19 +158,37 @@ class UIComponent(ABC, Generic[T]):
 
         except Exception as e:
             return self._handle_exception(internal_container, e)
+        
+    def render(self, target: StreamlitWidget, input_dto: Optional[BaseModel]) -> BaseComponentResponse[T]:
+
+        try:
+            self._validate_input(input_dto)
+            response = self._render(target, input_dto)
+            response.component_name = self.name
+            self._validate_output(response)
+            self._render_message(response, target)
+
+            return response
+
+        except Exception as e:
+            return self._handle_exception(target, e)
 
     def __call__(
         self, 
         container: StreamlitWidget, 
         state: AppState,
         input_dto: Optional[BaseModel] = None,
+        fragment=False
     ) -> BaseComponentResponse[T]:
         
         #ai posso usar a resposta anterior dentro do componente como quiser
         self._inject_previous_response(state)
         with container:
             try:
-                response = self._fragment_render(container, input_dto)
+                if fragment:
+                    response = self._fragment_render(container, input_dto)
+                else:
+                    response = self.render(container, input_dto)
                 return response
             except Exception as e:
                 return self._handle_exception(container, e)

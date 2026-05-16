@@ -24,6 +24,16 @@ class AppSection(BaseModel):
     @property
     def depends_on_names(self) -> Set[str]:
         return {s.name for s in self._depends_on_sections}
+    
+    @property
+    def depends_on_names_list(self)->List[str]:
+
+        name_list = []
+        for s in self._depends_on_sections:
+            name = s.name
+            if name not in name_list:
+                name_list.append(name)
+        return name_list
 
     def add_dependency(self, other_section: "AppSection"):
         """

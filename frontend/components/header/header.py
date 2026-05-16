@@ -76,9 +76,10 @@ class Header(UIComponent[HeaderRenderedDTO]):
 
         self._setup_page_config()
         with container:
-            st.header(APP_NAME, text_alignment='center')
+
+            st.markdown(f"## {APP_NAME}", text_alignment='center')
+            st.markdown(f"### {APP_TITLE}", text_alignment='center')
             self._render_banner_img()
-            st.subheader(APP_TITLE, text_alignment='center')
             self._render_description()
 
         output_dto = HeaderRenderedDTO(rendered=True)
