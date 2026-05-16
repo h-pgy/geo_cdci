@@ -99,24 +99,28 @@ class AddressForm(UIComponent[AddressInputDTO]):
         return True
     
 
-    def define_submit_text(self)->str:
+    def define_submit_text(self, button_key:str) -> str:
         """
         Define o texto do botão de submit com base no estado atual do formulário.
         """
-        if self.previous_response is not None:
+        pressed = st.session_state.get(button_key, False)
+        if self.previous_response is not None or pressed:
             return "Atualizar busca"
         else:
             return "Consultar Endereço"
     
-    def define_submit_icon(self)->str:
-            """
-            Define o ícone do botão de submit com base no estado atual do formulário.
-            """
-            if self.previous_response is not None:
-                return ":material/refresh:"
-            else:
-                return ":material/search:"
-    
+    def define_submit_icon(self, button_key:str) -> str:
+        """
+        Define o ícone do botão de submit com base no estado atual do formulário.
+        """
+
+        pressed = st.session_state.get(button_key, False)
+        if self.previous_response is not None or pressed:
+            return ":material/refresh:"
+        else:
+            return ":material/search:"
+                        
+
     def form(self, container: StreamlitWidget) -> tuple[bool, str|None, int|None]:
 
         container.write("Identificação do Imóvel")
@@ -133,9 +137,12 @@ class AddressForm(UIComponent[AddressInputDTO]):
                 with cols[1]:
                     self.help_numero()
 
-                submit_text = self.define_submit_text()
-                submit_icon = self.define_submit_icon()
-                submit_button = st.form_submit_button(submit_text, icon=submit_icon)
+                button_key="submit_button_pressed"
+                submit_text = self.define_submit_text(button_key)
+                submit_icon = self.define_submit_icon(button_key)
+                submit_button = st.form_submit_button(submit_text, icon=submit_icon, key=button_key)
+                if not submit_button:
+                    st.stop()
                 return submit_button, logradouro, numero
 
     def _render(self, container: StreamlitWidget, input_dto: HeaderRenderedDTO) -> BaseComponentResponse[AddressInputDTO]:

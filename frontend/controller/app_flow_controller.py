@@ -81,7 +81,6 @@ class AppFlowController:
 
         if response.signal != AppFlowSignal.GO:
             self._invalidate_downstream(section_interna)
-            st.stop()
 
 
         return response
