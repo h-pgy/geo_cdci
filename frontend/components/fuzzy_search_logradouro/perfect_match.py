@@ -43,7 +43,7 @@ class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
     def show_map(self, container: StreamlitWidget, codlog: str, logradouro_name:str) -> None:
 
         container_map = container.container(border=True)
-        container_map.markdown(f"#### Visualização do logradouro '{codlog}' no mapa")
+        container_map.markdown(f"#### Visualização do logradouro '{logradouro_name}' no mapa")
         mapa = self.map_plugin(codlog, container=container_map)
 
     
@@ -56,7 +56,7 @@ class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
         internal_container.success(f"Match perfeito encontrado para '{logradouro_name}' com código {codlog}!", icon=":material/celebration:")
         self.show_map(internal_container, codlog, logradouro_name)
 
-        
+
     def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
         logradouro = self.data_pipeline(input_dto)

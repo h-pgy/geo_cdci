@@ -9,15 +9,20 @@ class Settings(BaseSettings):
     WFS_NAMESPACE: str = "geoportal"
 
     #WMS
-
-    WMS_URL: str = "https://wms.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wms"
-    LAYER_MAPA_BASE: str = "MapaBase_Politico"
+    WMS_URL: str = "https://wms.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows"
+    WMS_RASTER_URL: str = "http://raster.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wms"
     TILE_LAYER_ATTRIBUTION: str = "Prefeitura de São Paulo / GeoSampa"
+    WMS_VERSION: str = "1.3.0"
 
     #crs
     WFS_CRS: str = "EPSG:31983"
+    WMS_CRS: str = "EPSG:4326"
 
-    # Camadas
+    #CAMADAS WFS
+    LAYER_MAPA_BASE: str = "geoportal:MapaBase_Politico"
+    LAYER_ORTOFOTO: str = "geoportal:ORTO_RGB_2020"
+
+    # Camadas WFS
     LAYER_LOTES: str = "lote_cidadao"
     LAYER_LOGRADOUROS: str = "segmento_logradouro"
 

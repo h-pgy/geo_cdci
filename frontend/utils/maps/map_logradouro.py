@@ -3,7 +3,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 from api.services.logradouro.logradouro_line import LogradouroLineFetcher
 from api.services.map.geojson_layer import GeoJsonLayerFactory
-from api.services.map.tile_layer import add_tile_layer_to_map
+from api.services.map.tile_layer import add_mapa_base, add_ortofoto
 import geopandas as gpd
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 
@@ -13,7 +13,8 @@ class LogradouroMapPlugin:
     def __init__(self):
         self.logradouro_line_fetcher = LogradouroLineFetcher()
         self.add_geojson_layer = GeoJsonLayerFactory()
-        self.add_tile_layer = add_tile_layer_to_map
+        self.add_mapa_base = add_mapa_base
+        self.add_ortofoto = add_ortofoto
         self._current_codlog: str = ""
 
     def get_centroid(self, gdf:gpd.GeoDataFrame) -> list[float]:
@@ -35,9 +36,14 @@ class LogradouroMapPlugin:
 
         gdf = self.logradouro_line_fetcher(codlog, reprojetar_para_4326=True)
         centroid = self.get_centroid(gdf)
-        mapa = folium.Map(location=centroid, zoom_start=15, tiles="openstreetmap")
-        #mapa = self.add_tile_layer(mapa)
-        mapa = self.add_geojson_layer(mapa, gdf, layer_name="Logradouro")
+        mapa = folium.Map(location=centroid, zoom_start=15, 
+                          tiles=None
+                          )
+        #o tile layer do geosampa não suporta conversão de CRS
+        mapa = self.add_geojson_layer(mapa, gdf, name="Logradouro")
+        mapa = self.add_mapa_base(mapa)
+        mapa=self.add_ortofoto(mapa)
+        folium.LayerControl().add_to(mapa)
 
         return mapa
         
