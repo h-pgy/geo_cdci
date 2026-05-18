@@ -33,9 +33,9 @@ class LogradouroMapPlugin:
 
     def build_map(self, codlog:str)->folium.Map:
 
-        gdf = self.logradouro_line_fetcher(codlog, reprojetar_para_3857=True)
+        gdf = self.logradouro_line_fetcher(codlog, reprojetar_para_4326=True)
         centroid = self.get_centroid(gdf)
-        mapa = folium.Map(location=centroid, zoom_start=12, tiles="openstreetmap")
+        mapa = folium.Map(location=centroid, zoom_start=15, tiles="openstreetmap")
         #mapa = self.add_tile_layer(mapa)
         mapa = self.add_geojson_layer(mapa, gdf, layer_name="Logradouro")
 
