@@ -1,5 +1,24 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 from typing import List, Optional
+
+class LogradouroChoiceDTO(BaseModel):
+
+    original_match: LogradouroMatchDTO
+    codlog: str
+    
+    @property
+    def logradouro(self) -> str:
+        return self.original_match.logradouro
+    
+    @field_validator('codlog', mode='before')
+    def validate_codlog(cls, v)->str:
+
+        if len(v)!=6:
+            raise ValueError("O código do logradouro deve conter exatamente 6 caracteres.")
+        if not all(c.isdigit() for c in v):
+            raise ValueError("O código do logradouro deve conter apenas dígitos.")
+        
+        return v
 
 class LogradouroMatchDTO(BaseModel):
     logradouro: str
@@ -44,4 +63,8 @@ class LogradouroSearchResultsDTO(BaseModel):
         """
         Como a lista é ordenada na validação, o melhor match é sempre o primeiro.
         """
-        return self.matches[0] if self.matches else None
+
+        if not self.matches:
+            raise ValueError("A lista de matches não pode ser vazia para acessar o melhor match.")
+
+        return self.matches[0]

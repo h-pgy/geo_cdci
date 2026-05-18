@@ -159,7 +159,7 @@ class UIComponent(ABC, Generic[T]):
         except Exception as e:
             return self._handle_exception(internal_container, e)
         
-    def render(self, target: StreamlitWidget, input_dto: Optional[BaseModel]) -> BaseComponentResponse[T]:
+    def _rerun_render(self, target: StreamlitWidget, input_dto: Optional[BaseModel]) -> BaseComponentResponse[T]:
 
         try:
             self._validate_input(input_dto)
@@ -188,7 +188,7 @@ class UIComponent(ABC, Generic[T]):
                 if fragment:
                     response = self._fragment_render(container, input_dto)
                 else:
-                    response = self.render(container, input_dto)
+                    response = self._rerun_render(container, input_dto)
                 return response
             except Exception as e:
                 return self._handle_exception(container, e)

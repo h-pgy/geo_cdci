@@ -62,6 +62,16 @@ class AddressMatcher:
             raise ValueError(f'Logradouro {logradouro} não encontrado na base de dados.')
         return df
     
+    def get_codlog_by_logradouro(self, logradouro:str)->str:
+        """Dado um logradouro, retorna o código do logradouro (codlog) correspondente a ele."""
+        df_logradouro = self.get_full_logradouro_info(logradouro)
+        codlogs = df_logradouro["cd_logradouro"].unique()
+        if len(codlogs) == 0:
+            raise ValueError(f'Logradouro {logradouro} não encontrado na base de dados.')
+        if len(codlogs) > 1:
+            raise ValueError(f'Logradouro {logradouro} corresponde a múltiplos códigos de logradouro na base de dados: {codlogs}.')
+        return codlogs[0]
+    
     def get_full_address_info(self, logradouro:str, numero_porta:str)->pd.DataFrame|None:
 
         """Dado um logradouro e número de porta, retorna as linhas da base que correspondem a ambos."""
