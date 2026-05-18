@@ -52,6 +52,12 @@ class WFSFetcher:
             
         params.update(query_parameters)
         return params
+    
+    def build_query_url_string(self, nome_camada:str, params:dict[str, Union[str, int]]) -> str:
+        
+        query_string = "&".join(f"{key}={value}" for key, value in params.items())
+        return f"{self.url_base}?{query_string}"
+
 
     def get_layer_data(self, nome_camada:str, output_format:str="application/json", count:Optional[int]=None, 
                        start_index:Optional[int]=None, **query_parameters)->dict:
@@ -64,7 +70,7 @@ class WFSFetcher:
         )
 
         if self.verbose:
-            print(f"Fetching data at url {self.url_base} with parameters: {params}")
+            print(f"Fetching data at url {self.build_query_url_string(nome_camada, params)}")
         
         response = requests.get(self.url_base, params=params)
         

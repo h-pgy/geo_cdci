@@ -8,9 +8,18 @@ class Settings(BaseSettings):
     WFS_VERSION: str = "1.0.0"
     WFS_NAMESPACE: str = "geoportal"
 
+    #WMS
+
+    WMS_URL: str = "https://wms.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wms"
+    LAYER_MAPA_BASE: str = "MapaBase_Politico"
+    TILE_LAYER_ATTRIBUTION: str = "Prefeitura de São Paulo / GeoSampa"
+
+    #crs
+    WFS_CRS: str = "EPSG:31983"
+
     # Camadas
     LAYER_LOTES: str = "lote_cidadao"
-
+    LAYER_LOGRADOUROS: str = "segmento_logradouro"
 
     #folder_dados
     FOLDER_DADOS: str = "dados"

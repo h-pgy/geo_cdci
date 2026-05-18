@@ -5,6 +5,7 @@ from api.services.fuzzy_iptu_address_search import AddressMatcher
 from typing import Optional
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from frontend.utils.message import info_message
+from frontend.utils.maps.map_logradouro import LogradouroMapPlugin
 import streamlit as st
 
 class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
@@ -16,6 +17,7 @@ class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
 
     def __init__(self, matcher: Optional[AddressMatcher] = None)->None:
         self.matcher = matcher or AddressMatcher()
+        self.map_plugin = LogradouroMapPlugin()
 
     def assert_match_100(self, input_dto: LogradouroSearchResultsDTO)->None:
         if not input_dto.match_100:
@@ -38,11 +40,19 @@ class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
 
         return result
     
+    def show_map(self, container: StreamlitWidget, codlog: str) -> None:
+
+        container_map = container.container(border=True)
+        container_map.markdown(f"### Visualização do logradouro '{codlog}' no mapa")
+        mapa = self.map_plugin(codlog, container=container_map)
+
+    
     def show_result_in_ui(self, container:StreamlitWidget, result: LogradouroChoiceDTO) -> None:
 
         internal_container = container.container(border=True)
         internal_container.markdown(f"### Resultados da busca por logradouro")
         internal_container.success(f"Match perfeito encontrado para '{result.original_match.logradouro}' com código {result.codlog}!", icon=":material/celebration:")
+        self.show_map(internal_container, result.codlog)
     
     def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
