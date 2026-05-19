@@ -19,6 +19,7 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
 
     def __init__(self, matcher: Optional[AddressMatcher] = None)->None:
         self.matcher = matcher or AddressMatcher()
+        self.map_plugin = LogradouroMapPlugin()
 
     def assert_not_match_100(self, input_dto: LogradouroSearchResultsDTO)->None:
         if input_dto.match_100:
@@ -81,6 +82,12 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
                 self.blocking_messages(escolha)
 
                 return escolha
+            
+    def show_map(self, container: StreamlitWidget, codlog: str, logradouro_name:str) -> None:
+
+        container_map = container.container(border=True)
+        container_map.markdown(f"#### Visualização do logradouro '{logradouro_name}' no mapa")
+        mapa = self.map_plugin(codlog, container=container_map)
         
     def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
@@ -91,4 +98,6 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
 
         escolha = self.form(input_dto, internal_container)
         results = self.process_choice(escolha, input_dto, internal_container)
+        codlog = results.data.codlog
+        self.show_map(internal_container, codlog, escolha)
         return results
