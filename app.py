@@ -77,7 +77,9 @@ def main():
     elif logradouro_results.signal == AppFlowSignal.GO and not logradouro_results.data.match_100:
         controller.trigger_section(logradouro_selecion)
 
+    st.button('Olá')
     st.write(state)   
+    st.stop()
 
 if __name__=="__main__":
     main()
