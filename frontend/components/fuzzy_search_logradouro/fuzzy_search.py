@@ -5,7 +5,7 @@ from frontend.dto.address_input import AddressInputDTO
 from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from typing import Optional, List
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
-from frontend.utils.message import error_message, success_message, render_message
+from frontend.utils.message import error_message, success_message, processing_message, render_message
 import time
 
 class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
@@ -46,6 +46,7 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
         
         if not raw_matches:
             message = error_message(
+                self,
                 body=f"Não localizamos nenhum logradouro com o termo informado: {logradouro_input}. Verifique a grafia ou tente um nome mais genérico.",
                 duration=3
             )
@@ -55,6 +56,7 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
 
         if results_dto is None:
             message = error_message(
+                self,
                 body="Ocorreu um erro ao processar os resultados da busca. Por favor, tente novamente.",
                 duration=3
             )
@@ -63,6 +65,7 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
         #sucesso
 
         message = success_message(
+            self,
             body=f"Encontramos {len(results_dto.matches)} correspondências para o logradouro informado.",
             duration=2
         )
@@ -71,9 +74,14 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
     
     def _render(self, container: StreamlitWidget, input_dto: AddressInputDTO) -> BaseComponentResponse[LogradouroSearchResultsDTO]:
         
-        with container.spinner("Consultando base de logradouros..."):
-            time.sleep(1)
-            response = self.pipeline(input_dto)
+        message=  processing_message(
+            self,
+            "Consultando base de logradouros..."
+        )
+        
+        render_message(message, container)
+
+        response = self.pipeline(input_dto)
     
         return response
 

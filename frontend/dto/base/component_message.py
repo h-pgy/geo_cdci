@@ -8,6 +8,7 @@ class MessageType(Enum):
     WARNING = auto()
     INFO = auto()
     ERROR = auto() # Útil para mensagens de erro que não interrompem o fluxo (stasis)
+    PROCESSING = auto() # Para indicar que uma ação está em andamento, sem ser um erro ou sucesso definitivo
 
 class ComponentMessage(BaseModel):
     """Encapsula feedbacks positivos ou instruções de progresso."""
@@ -15,3 +16,4 @@ class ComponentMessage(BaseModel):
     body: str
     status: MessageType
     duration: Optional[int] = None  # Duração em segundos para exibir a mensagem, se aplicável
+    key: str # Chave única para controle de estado e atualização da mensagem na UI

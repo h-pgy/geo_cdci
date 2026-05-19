@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     #imagens
     BANNER_IMG: str = "banner.png"
 
+    #basic msg duration
+    MSG_DURATION: int = 2
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

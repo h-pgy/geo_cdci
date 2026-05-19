@@ -148,7 +148,7 @@ class AddressForm(UIComponent[AddressInputDTO]):
     def _render(self, container: StreamlitWidget, input_dto: HeaderRenderedDTO) -> BaseComponentResponse[AddressInputDTO]:
 
         if not input_dto.rendered:
-            return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message("Aguardando o carregamento do cabeçalho para exibir o formulário de endereço."))
+            return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message(self, "Aguardando o carregamento do cabeçalho para exibir o formulário de endereço."))
 
         internal_container = container.container(border=True)
         internal_container.write("### Insira o endereço do imóvel")
@@ -165,8 +165,8 @@ class AddressForm(UIComponent[AddressInputDTO]):
             return BaseComponentResponse(
                 signal=AppFlowSignal.GO,
                 data=address_data,
-                message=message.success_message("Endereço enviado com sucesso! Iniciando processamento...",  duration=1)
+                message=message.success_message(self, "Endereço enviado com sucesso! Iniciando processamento...",  duration=1)
             )
 
-        return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message("Aguardando o envio do endereço para iniciar o processamento."))
+        return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message(self, "Aguardando o envio do endereço para iniciar o processamento."))
     

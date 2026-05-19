@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     #misc
     ERROR_MSG_DURATION_SECONDS: int = 1
+    SPINNER_MSG_DURATION_SECONDS: int = 2
 
     model_config = SettingsConfigDict(
         env_file=".env",

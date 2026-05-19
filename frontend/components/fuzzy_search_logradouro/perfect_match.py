@@ -63,8 +63,9 @@ class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
         self.show_result_in_ui(container, logradouro)
 
         message = info_message(
+            self,
             body=f"O logradouro digitado possui um equivalente perfeito em nossa base de dados. Você será redirecionado para a próxima etapa automaticamente.",
-            duration=5
+            duration=3
         )
 
         return BaseComponentResponse(
