@@ -5,6 +5,7 @@ from frontend.dto.address_input import AddressInputDTO
 from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from frontend.utils.message import error_message, success_message, info_message, render_message
 from frontend.utils.maps.map_logradouro import LogradouroMapPlugin
+from frontend.utils.button import ButtonGate
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from typing import Optional
@@ -29,13 +30,13 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
                 return match
         raise ValueError("A escolha selecionada não corresponde a nenhum logradouro nos resultados.")
         
-    def blocking_messages(self, submit_button:bool, escolha:str|None)->None:
+    def blocking_messages(self, escolha:str|None)->None:
 
-        if not submit_button:
+        if not self.button_gate.is_pressed:
            st.info('Selecione um logradouro e clique em "Confirmar" para prosseguir.', icon=":material/left_click:")
            st.stop()
         
-        if submit_button and not escolha:
+        if self.button_gate.is_pressed and not escolha:
             st.warning("Nenhuma opção selecionada. Por favor, selecione um logradouro para prosseguir.", icon=":material/warning:")
             st.stop()
     
@@ -52,12 +53,20 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
             signal=AppFlowSignal.GO,
             message=sucess_message
         )
+    
+    def define_button_label(self)->str:
+
+        if self.button_gate.is_pressed:
+            return "Atualizar escolha"
+        return "Confirmar"
 
     
-    def form(self, results: LogradouroSearchResultsDTO, container: StreamlitWidget)->tuple[bool, Optional[str]]:
+    def form(self, results: LogradouroSearchResultsDTO, container: StreamlitWidget)->str:
 
         opcoes = [m.logradouro for m in results.matches]
         captions = [f"Confiança: {m.score}%" for m in results.matches]
+
+        self.button_gate = ButtonGate("confirm_logradouro_selection_gate")
 
         with container:
             with st.form(key="manual_address_selection_form"):
@@ -66,11 +75,12 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
                     options=opcoes,
                     captions=captions,
                 )
-                submit_button = st.form_submit_button(label="Confirmar", key="confirm_logradouro_selection")
+                button_label = self.define_button_label()
+                submit_button = st.form_submit_button(label=button_label,  on_click=self.button_gate.press)
                 
-                self.blocking_messages(submit_button, escolha)
+                self.blocking_messages(escolha)
 
-                return submit_button, escolha
+                return escolha
         
     def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
@@ -79,6 +89,6 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
         internal_container.markdown("### Resultados da busca por logradouro")
         internal_container.info("Não encontramos um match perfeito para o logradouro digitado. Por favor, selecione a opção correta abaixo para prosseguir.", icon=":material/info:")
 
-        submit_button, escolha = self.form(input_dto, internal_container)
+        escolha = self.form(input_dto, internal_container)
         results = self.process_choice(escolha, input_dto, internal_container)
         return results
