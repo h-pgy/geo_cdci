@@ -1,9 +1,9 @@
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
-from api.services.logradouro.logradouro_line import LogradouroLineFetcher
 from api.services.map.geojson_layer import GeoJsonLayerFactory
 from api.services.map.tile_layer import add_mapa_base, add_ortofoto
+from frontend.utils.maps.cached_wfs_fetchers import cached_logradouro_line_fetcher
 import geopandas as gpd
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 
@@ -11,7 +11,7 @@ from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 class LogradouroMapPlugin:
 
     def __init__(self):
-        self.logradouro_line_fetcher = LogradouroLineFetcher()
+        self.logradouro_line_fetcher = cached_logradouro_line_fetcher
         self.add_geojson_layer = GeoJsonLayerFactory()
         self.add_mapa_base = add_mapa_base
         self.add_ortofoto = add_ortofoto

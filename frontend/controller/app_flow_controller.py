@@ -3,6 +3,7 @@ from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from .section import AppSection
 from typing import Dict, Optional, Any
 from pydantic import BaseModel
+from collections import OrderedDict
 import streamlit as st
 
 class AppFlowController:
@@ -12,7 +13,7 @@ class AppFlowController:
     """
     def __init__(self, state: AppState):
         self.state = state
-        self._sections: Dict[str, AppSection] = {}
+        self._sections: Dict[str, AppSection] = OrderedDict()
 
     def register(self, section: AppSection) -> "AppFlowController":
         """Registra uma seção no catálogo do controlador."""
@@ -41,6 +42,15 @@ class AppFlowController:
                 self.state.delete_response(name)
                 # Recursividade para limpar a cascata à frente
                 self._invalidate_downstream(section)
+
+    def _invalidate_all_rerun(self):
+        """Pega a primeira seção e invalida todas após ela. Depois roda o app novamente"""
+
+        primeira_secao = list(self._sections.values())[0]
+        self._invalidate_downstream(primeira_secao)
+        st.session_state.clear()
+        st.rerun()
+
 
     def _resolve_input(self, section: AppSection) -> Optional[BaseModel]:
         """
@@ -79,8 +89,15 @@ class AppFlowController:
 
         self.state.store_response(section_interna.name, response)
 
+        if response.signal == AppFlowSignal.RERUN:
+            print('*'*45)
+            print('Sinal de RERUN recebido. Iniciando processo de rerun...')
+            self._invalidate_all_rerun()
+
         if response.signal != AppFlowSignal.GO:
             self._invalidate_downstream(section_interna)
+
+        
 
 
         return response

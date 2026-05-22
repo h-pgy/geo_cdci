@@ -78,7 +78,7 @@ def main():
         controller.trigger_section(logradouro_selecion)
 
     st.button('Olá')
-    st.write(state)   
+    st.write(st.session_state)   
     st.stop()
 
 if __name__=="__main__":
