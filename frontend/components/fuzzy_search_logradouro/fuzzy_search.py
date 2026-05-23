@@ -38,13 +38,19 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
         except (ValueError, KeyError, IndexError) as e:
             return None
         
-    def pipeline(self, input_dto: AddressInputDTO) -> BaseComponentResponse[LogradouroSearchResultsDTO]:
+    def fixed_error_msg(self, container: StreamlitWidget, logradouro_input:str)->None:
+        
+        internal_container = container.container(border=True)
+        internal_container.error(f"Nenhum logradouro encontrado para o termo: '{logradouro_input}'. Verifique a grafia ou tente um nome mais genérico.")
+        
+    def pipeline(self, container: StreamlitWidget, input_dto: AddressInputDTO) -> BaseComponentResponse[LogradouroSearchResultsDTO]:
         
         logradouro_input = input_dto.logradouro
 
         raw_matches = self.matcher.find_matches_pipeline(logradouro_input)
         
         if not raw_matches:
+            self.fixed_error_msg(container, logradouro_input)
             message = error_message(
                 self,
                 body=f"Não localizamos nenhum logradouro com o termo informado: {logradouro_input}. Verifique a grafia ou tente um nome mais genérico.",
@@ -81,7 +87,7 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
         
         render_message(message, container)
 
-        response = self.pipeline(input_dto)
+        response = self.pipeline(container, input_dto)
     
         return response
 
