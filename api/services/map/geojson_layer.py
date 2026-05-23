@@ -57,6 +57,26 @@ class GeoJsonLayerFactory:
             raise ValueError("A lista de 'aliases' deve ter o mesmo comprimento que a lista de 'fields'.")
 
         return folium.GeoJsonPopup(fields=fields, aliases=aliases)
+    
+    def solve_tooltip(self, tooltip_def:dict[str, str|list[str]]|None, gdf: gpd.GeoDataFrame) -> folium.GeoJsonTooltip|None:
+        if tooltip_def is None:
+            return None
+
+        fields = tooltip_def.get("fields")
+        if fields is None:
+            raise ValueError("O dicionário 'tooltip' deve conter a chave 'fields' indicando os campos para tooltip.")
+
+        for field in fields:
+            if field not in gdf.columns:
+                raise ValueError(f"O campo '{field}' especificado para tooltip não existe no GeoDataFrame.")
+        
+        aliases = tooltip_def.get("aliases", fields)
+        if len(aliases) != len(fields):
+            raise ValueError("A lista de 'aliases' deve ter o mesmo comprimento que a lista de 'fields'.")
+        
+        style = tooltip_def.get("style", "background-color: white; color: black; border: 1px solid black; padding: 5px;")
+
+        return folium.GeoJsonTooltip(fields=fields, aliases=aliases, style=style)
        
 
     def executar_pipeline(
@@ -66,7 +86,8 @@ class GeoJsonLayerFactory:
         name: str, 
         control: bool, 
         style_function: Callable[[dict[str, Any]], dict[str, Any]]|None, 
-        pop_up_def:dict[str, str|list[str]]|None, 
+        pop_up_def:dict[str, str|list[str]]|None,
+        tooltip_def:dict[str, str|list[str]]|None,
         **style_kwargs: Any,
     ) -> folium.Map:
         self.validar_argumentos(mapa_folium, gdf)
@@ -74,6 +95,7 @@ class GeoJsonLayerFactory:
         gdf_configurado = self.preparar_crs(gdf)
         funcao_estilo = style_function or self.gerar_style_function(**style_kwargs)
         pop_up = self.solve_pop_up(pop_up_def, gdf_configurado)
+        tooltip = self.solve_tooltip(tooltip_def, gdf_configurado)
 
         folium.GeoJson(
             gdf_configurado,
@@ -81,7 +103,8 @@ class GeoJsonLayerFactory:
             style_function=funcao_estilo,
             control=control,
             zoom_on_click=True,
-            popup=pop_up
+            popup=pop_up,
+            tooltip=tooltip
         ).add_to(mapa_folium)
 
         return mapa_folium
@@ -94,6 +117,7 @@ class GeoJsonLayerFactory:
         control: bool = True,
         style_function: Optional[Callable[[dict[str, Any]], dict[str, Any]]] = None,
         pop_up_def: Optional[dict[str, str|list[str]]]=None,
+        tooltip_def: Optional[dict[str, str|list[str]]]=None,
         **style_kwargs: Any
     ) -> folium.Map:
         return self.executar_pipeline(
@@ -103,5 +127,6 @@ class GeoJsonLayerFactory:
             control=control,
             style_function=style_function,
             pop_up_def=pop_up_def,
+            tooltip_def=tooltip_def,
             **style_kwargs
         )

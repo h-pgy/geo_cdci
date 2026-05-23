@@ -40,8 +40,11 @@ class LogradouroMapPlugin:
                           tiles=None
                           )
         #o tile layer do geosampa não suporta conversão de CRS
-        mapa = self.add_geojson_layer(mapa, gdf, name="Logradouro", pop_up_def={'fields': ['nm_logradouro'],
-                                                                                  'aliases': ['Nome do Logradouro']})
+        mapa = self.add_geojson_layer(mapa, gdf, name="Logradouro", 
+                                      pop_up_def={'fields': ['nm_logradouro', 'codlog'],
+                                                    'aliases': ['Nome do Logradouro', 'Código do Logradouro']},
+                                      tooltip_def={'fields': ['nm_logradouro'],
+                                                    'aliases': ['Nome do Logradouro']})
         mapa = self.add_mapa_base(mapa)
         mapa=self.add_ortofoto(mapa)
         folium.LayerControl().add_to(mapa)
