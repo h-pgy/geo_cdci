@@ -57,7 +57,8 @@ class GeoJsonLayerFactory:
             gdf_configurado,
             name=name,
             style_function=funcao_estilo,
-            control=control
+            control=control,
+            zoom_on_click=True
         ).add_to(mapa_folium)
 
         return mapa_folium
