@@ -40,7 +40,30 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
         imoveis_exibicao = self.data_editor_component.clean_dataframe(imoveis) 
         container.write(imoveis_exibicao)
 
-        data = PropertyChoiceDTO(numero=numero, logradouro_escolhido=logradouro)
+        imovel_selecionado = imoveis.iloc[0]
+        cd_identificador_lote = imovel_selecionado['cd_identificador']
+        numero = imovel_selecionado['cd_numero_porta']
+
+        data = PropertyChoiceDTO(numero=numero, logradouro_escolhido=logradouro, cd_identificador_lote=cd_identificador_lote)
+
+        return data
+    
+    def varios_imoveis(self, container:StreamlitWidget, imoveis: pd.DataFrame, numero:int, logradouro:LogradouroChoiceDTO) -> Optional[PropertyChoiceDTO]:
+
+        container.markdown(f"O endereço informado - **{logradouro.logradouro} {numero}** - corresponde a mais de um imóvel em nosso banco de dados. Por favor, selecione o imóvel correto para prosseguir com a emissão da certidão.")
+        data_editor_response = self.data_editor_component.render(container, imoveis, title="Seleção de Imóvel", header_message="Marque a caixa de seleção ao lado do imóvel correspondente ao endereço informado.")
+        
+        if data_editor_response is None or data_editor_response.empty:
+            container.warning("Nenhum imóvel selecionado. Por favor, selecione um imóvel para prosseguir.")
+            return None
+        
+        index_selecionado = data_editor_response.index[0]
+        imovel_selecionado = imoveis.loc[index_selecionado]
+
+        numero = imovel_selecionado['cd_numero_porta']
+        cd_identificador_lote = imovel_selecionado['cd_identificador']
+
+        data = PropertyChoiceDTO(numero=numero, logradouro_escolhido=logradouro, cd_identificador_lote=cd_identificador_lote)
 
         return data
     
@@ -67,6 +90,10 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
         if imoveis.shape[0]==1:
             
             data = self.unico_imovel(internal_container, imoveis, address_input.numero, logradouro_choice)
+
+        else:
+            data = self.varios_imoveis(internal_container, imoveis, address_input.numero, logradouro_choice)
+            
         
 
         return BaseComponentResponse(signal=AppFlowSignal.GO, data=data)

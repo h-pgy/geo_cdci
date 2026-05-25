@@ -5,6 +5,7 @@ class PropertyChoiceDTO(BaseModel):
 
     numero: int = Field(..., gt=0, description="Número do endereço escolhido")
     logradouro_escolhido: LogradouroChoiceDTO
+    cd_identificador_lote: int = Field(..., gt=1000000, description="Identificador do lote do imóvel escolhido")
     #remove os whitespaces automaticamente
     model_config = ConfigDict(str_strip_whitespace=True)
 
