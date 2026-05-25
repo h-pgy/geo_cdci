@@ -5,8 +5,10 @@ from frontend.dto.logradouro_fuzzy_search import LogradouroChoiceDTO
 from frontend.dto.property_match import PropertyChoiceDTO
 from api.services.fuzzy_iptu_address_search import AddressMatcher
 import pandas as pd
-
-from typing import Optional, List
+from frontend.components.property_selection.property_selection_subcomponent import DataEditorPropertyChoice
+from typing import Optional, Tuple
+import streamlit as st
+from frontend.utils.message import error_message
 
 class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
@@ -17,6 +19,7 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
     def __init__(self, matcher: Optional[AddressMatcher] = None)->None:
         self.matcher = matcher or AddressMatcher()
+        self.data_editor_component = DataEditorPropertyChoice(submit_button_key="perfect_match_submit")
 
     def extract_codlog(self, logradouro_choice: LogradouroChoiceDTO) -> str:
         return logradouro_choice.codlog
@@ -24,7 +27,22 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
     def extract_numero_porta(self, address_input: AddressInputDTO) -> int:
         return int(address_input.numero)
 
-    def get_address_info(self, logradouro_choice: LogradouroChoiceDTO, numero_porta: int) -> Optional[pd.DataFrame]:
+    def get_address_info(self, logradouro_choice: LogradouroChoiceDTO, address_input: AddressInputDTO) -> Optional[pd.DataFrame]:
         codlog = logradouro_choice.codlog
+        numero_porta = self.extract_numero_porta(address_input)
         return self.matcher.get_full_address_info_by_codlog(codlog, numero_porta)
     
+    def _render(self, container: StreamlitWidget, input_dtos: Tuple[AddressInputDTO, LogradouroChoiceDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
+
+        address_input, logradouro_choice = input_dtos
+        imoveis = self.get_address_info(
+            logradouro_choice=logradouro_choice,
+            address_input=address_input
+        )
+
+        if imoveis is not None:# is None or imoveis.empty:
+            error_msg_txt = "Não foi possível encontrar informações para o endereço selecionado. Por favor, verifique os dados e tente novamente."
+            error_msg_obj = error_message(self, error_msg_txt)
+            return BaseComponentResponse(signal=AppFlowSignal.ERROR, data=None, message=error_msg_obj)
+        
+        st.info("Perfect match endereço. Em desenvolvimento")

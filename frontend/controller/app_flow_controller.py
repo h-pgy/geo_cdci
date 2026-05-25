@@ -5,6 +5,7 @@ from typing import Dict, Optional, Any, List
 from pydantic import BaseModel
 from collections import OrderedDict
 import streamlit as st
+from frontend.utils.message import info_message
 
 class AppFlowController:
     """
@@ -64,6 +65,13 @@ class AppFlowController:
         resps = [self.state.get_response(dep_name) for dep_name in section.depends_on_names]
         data = [resp.data for resp in resps]
         return data
+    
+    def bypass_section(self, section:AppSection):
+        """Força o bypass de uma seção, forçando o resultado GO."""
+        nome_secao = section.name
+        message = info_message(section.component, f"Seção '{nome_secao}' foi marcada para bypass. Pulando a execução dela e de suas dependências.")
+        bypass_response = BaseComponentResponse(signal=AppFlowSignal.GO, data=None, message=message)
+        self.state.store_response(section.name, bypass_response)
     
     def trigger_section(self, section: AppSection) -> Optional[BaseComponentResponse[Any]]:
         """

@@ -5,8 +5,10 @@ from frontend.dto.logradouro_fuzzy_search import LogradouroChoiceDTO
 from frontend.dto.property_match import PropertyChoiceDTO
 from api.services.fuzzy_iptu_address_search import AddressMatcher
 import pandas as pd
+from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
+from typing import Optional, Tuple
 
-from typing import Optional, List
+from frontend.utils.message import warning_message
 
 
 
@@ -29,3 +31,9 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
     def get_address_info(self, logradouro_choice: LogradouroChoiceDTO, numero_porta: int) -> Optional[pd.DataFrame]:
         codlog = logradouro_choice.codlog
         return self.matcher.get_full_address_info_by_codlog(codlog, numero_porta)
+    
+    def _render(self, container: StreamlitWidget, input_dtos: Tuple[AddressInputDTO, LogradouroChoiceDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
+
+        message = warning_message(self, "Match não perfeita de endereço. Em desenvolvimento")
+
+        return BaseComponentResponse(signal=AppFlowSignal.NO_GO, data=None, message=message)
