@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "GEOCEL"
     APP_TITLE: str = "GEOCEL - Certidão Automática de Existência de Lançamento de IPTU"
     APP_VERSION: str = "1.0.0"
+    MAP_BASE_ZOOM: int = 18
 
     #static
     STATIC_FOLDER: str = 'static'

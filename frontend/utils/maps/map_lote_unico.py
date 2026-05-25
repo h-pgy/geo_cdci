@@ -6,7 +6,9 @@ from api.services.map.tile_layer import add_mapa_base, add_ortofoto
 from frontend.utils.maps.cached_map_utils import cached_lote_polygon_fetcher
 import geopandas as gpd
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
+from frontend.config import settings
 
+MAP_BASE_ZOOM = settings.MAP_BASE_ZOOM
 
 class LoteUnicoMapPlugin:
 
@@ -36,7 +38,7 @@ class LoteUnicoMapPlugin:
 
         gdf = self.lote_polygon_fetcher(cd_identificador, reprojetar_para_4326=True)
         centroid = self.get_centroid(gdf)
-        mapa = folium.Map(location=centroid, zoom_start=15, 
+        mapa = folium.Map(location=centroid, zoom_start=MAP_BASE_ZOOM, 
                           tiles=None
                           )
         #o tile layer do geosampa não suporta conversão de CRS
