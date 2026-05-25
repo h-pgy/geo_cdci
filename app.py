@@ -97,12 +97,12 @@ def main():
     #resolve qual o tipo de selecao de logradouro e estrutura as dependencias da aplicacao de acordo
     if logradouro_results.signal == AppFlowSignal.GO and logradouro_results.data.match_100:
         selected_logradouro = controller.trigger_section(perfect_match_logradouro)
-        controller.bypass_section(logradouro_selection)
+        controller.bypass_section(logradouro_selection, data=selected_logradouro.data)
         near_neighboors_property_match.add_dependency(perfect_match_logradouro)
         perfect_property_match.add_dependency(perfect_match_logradouro)
     elif logradouro_results.signal == AppFlowSignal.GO and not logradouro_results.data.match_100:
         selected_logradouro = controller.trigger_section(logradouro_selection)
-        controller.bypass_section(perfect_match_logradouro)
+        controller.bypass_section(perfect_match_logradouro, data=selected_logradouro.data)
         near_neighboors_property_match.add_dependency(logradouro_selection)
         perfect_property_match.add_dependency(logradouro_selection)
     else:
@@ -116,12 +116,11 @@ def main():
         full_match = matcher.is_full_match(codlog_selecionado, numero_porta_selecionado)
 
         if full_match:
-            controller.trigger_section(perfect_property_match)
-            controller.bypass_section(near_neighboors_property_match)
+            selected_imovel = controller.trigger_section(perfect_property_match)
+            controller.bypass_section(near_neighboors_property_match, data=selected_imovel.data)
         else:
-            controller.trigger_section(near_neighboors_property_match)
-            controller.bypass_section(perfect_property_match)
-
+            selected_imovel = controller.trigger_section(near_neighboors_property_match)
+            controller.bypass_section(perfect_property_match, data=selected_imovel.data)
 
 
     st.button('Olá')

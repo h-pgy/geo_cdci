@@ -65,11 +65,12 @@ class AppFlowController:
         data = [resp.data for resp in resps]
         return data
     
-    def bypass_section(self, section:AppSection):
+    def bypass_section(self, section:AppSection, data:Optional[Any]=None)->None:
         """Força o bypass de uma seção, forçando o resultado GO."""
         nome_secao = section.name
-        message = info_message(section.component, f"Seção '{nome_secao}' foi marcada para bypass. Pulando a execução dela e de suas dependências.")
-        bypass_response = BaseComponentResponse(signal=AppFlowSignal.GO, data=None, message=message)
+        message = info_message(section.component, f"Seção '{nome_secao}' foi marcada para bypass. Pulando a execução dela e de suas dependências.")            
+        bypass_response = BaseComponentResponse(signal=AppFlowSignal.GO, data=data, message=message)
+        section.component._validate_output(bypass_response)
         self.state.store_response(section.name, bypass_response)
     
     def trigger_section(self, section: AppSection) -> Optional[BaseComponentResponse[Any]]:
