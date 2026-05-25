@@ -11,6 +11,7 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from frontend.utils.message import error_message, info_message, success_message
 from frontend.utils.button import ButtonGate
+from frontend.utils.maps.map_lote_unico import LoteUnicoMapPlugin
 
 class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
@@ -22,6 +23,7 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
     def __init__(self, matcher: Optional[AddressMatcher] = None)->None:
         self.matcher = matcher or AddressMatcher()
         self.data_editor_component = DataEditorPropertyChoice(submit_button_key="perfect_match_submit")
+        self.render_map_lote = LoteUnicoMapPlugin()
 
     def extract_codlog(self, logradouro_choice: LogradouroChoiceDTO) -> str:
         return logradouro_choice.codlog
@@ -109,12 +111,15 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
         internal_container.markdown("### Imóvel.")
         internal_container.info(f"Endereço {logradouro_choice.logradouro} {address_input.numero} encontrado em nosso banco de dados. Verifique as informações abaixo e prossiga para emissão da certidão.")
 
+        col_dados, col_mapa = internal_container.columns([1,2])
+        self.render_map_lote(cd_identificador=imoveis['cd_identificador'].iloc[0], container=col_mapa)
+
         if imoveis.shape[0]==1:
             
-            data = self.unico_imovel(internal_container, imoveis, address_input.numero, logradouro_choice)
+            data = self.unico_imovel(col_dados, imoveis, address_input.numero, logradouro_choice)
 
         else:
-            data = self.varios_imoveis(internal_container, imoveis, address_input.numero, logradouro_choice)
+            data = self.varios_imoveis(col_dados, imoveis, address_input.numero, logradouro_choice)
             
         not_found_rerun = self.not_found_reinit(internal_container)
         if not_found_rerun:
