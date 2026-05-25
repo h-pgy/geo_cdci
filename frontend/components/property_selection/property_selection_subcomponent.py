@@ -20,7 +20,7 @@ class DataEditorPropertyChoice:
         colunas = self.display_columns.values()
         df_cleaned = df[colunas].copy()
         df_cleaned.rename(columns={v:k for k,v in self.display_columns.items()}, inplace=True)
-        df_cleaned['Escolha'] = False
+        
         return df_cleaned
     
     def get_submit_button_text(self)->str:
@@ -73,6 +73,7 @@ class DataEditorPropertyChoice:
     def render(self, df:pd.DataFrame, container:StreamlitContainer, title:str, header_message:str) -> int:
 
         df_cleaned = self.clean_dataframe(df)
+        df_cleaned['Escolha'] = False
         widget_container = container.container(border=True)
         widget_container.markdown(f"#### {title}")
         widget_container.write(header_message)

@@ -32,7 +32,7 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
         codlog = logradouro_choice.codlog
         return self.matcher.get_full_address_info_by_codlog(codlog, numero_porta)
     
-    def _render(self, container: StreamlitWidget, input_dtos: Tuple[AddressInputDTO, LogradouroChoiceDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: Tuple[LogradouroChoiceDTO, AddressInputDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
 
         message = warning_message(self, "Match não perfeita de endereço. Em desenvolvimento")
 

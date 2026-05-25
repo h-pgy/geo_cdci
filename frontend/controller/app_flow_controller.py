@@ -53,10 +53,9 @@ class AppFlowController:
         st.rerun()
 
 
-    def _resolve_input(self, section: AppSection) -> Optional[List[BaseModel|None]]:
+    def _resolve_input(self, section: AppSection) -> Optional[List[BaseModel|None]]|None:
         """
         Define qual dado será injetado no componente. 
-        Se houver dependência, extrai o dado da resposta da primeira dependência.
         """
         if not section.depends_on_names:
             return section.initial_data
