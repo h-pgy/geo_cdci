@@ -2,7 +2,7 @@ from frontend.components.base import UIComponent
 from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from frontend.dto.logradouro_fuzzy_search import LogradouroSearchResultsDTO, LogradouroChoiceDTO
 from api.services.fuzzy_iptu_address_search import AddressMatcher
-from typing import Optional
+from typing import Optional, List
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from frontend.utils.message import info_message
 from frontend.utils.maps.map_logradouro import LogradouroMapPlugin
@@ -12,7 +12,7 @@ import streamlit as st
 class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
 
     name = "PerfectMatchLogradouro"
-    input_type = LogradouroSearchResultsDTO
+    input_types = {LogradouroSearchResultsDTO}
     output_type = LogradouroChoiceDTO
     user_error_msg= "Ocorreu um erro ao processar o resultado da busca por logradouro. Por favor, revise os dados e tente novamente."
 
@@ -82,8 +82,9 @@ class PerfectMatchLogradouro(UIComponent[LogradouroChoiceDTO]):
             container_result.markdown(f"### Resultados da busca por logradouro")
             container_result.success(f"Match perfeito encontrado para '{logradouro_name}' com código {codlog}!", icon=":material/celebration:")
             
-    def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: List[LogradouroSearchResultsDTO]) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
+        input_dto = input_dtos[0]
         logradouro = self.data_pipeline(input_dto)
 
         internal_container = container.container(border=True)

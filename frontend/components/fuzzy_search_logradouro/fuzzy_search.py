@@ -6,13 +6,13 @@ from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from typing import Optional, List
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from frontend.utils.message import error_message, success_message, processing_message, render_message
-import time
+
 
 class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
 
     name = "LogradouroFuzzySearch"
     user_error_msg = "Ocorreu um erro ao fazer a busca do logradouro em nossa base de dados. Por favor revise suas entradas e tente novamente."
-    input_type=AddressInputDTO
+    input_types={AddressInputDTO}
     output_type=LogradouroSearchResultsDTO
 
     def __init__(self, matcher: Optional[AddressMatcher] = None):
@@ -78,8 +78,9 @@ class LogradouroSearchProcessor(UIComponent[LogradouroSearchResultsDTO]):
 
         return BaseComponentResponse(signal=AppFlowSignal.GO, data=results_dto, message=message)
     
-    def _render(self, container: StreamlitWidget, input_dto: AddressInputDTO) -> BaseComponentResponse[LogradouroSearchResultsDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: List[AddressInputDTO]) -> BaseComponentResponse[LogradouroSearchResultsDTO]:
         
+        input_dto = input_dtos[0]
         message=  processing_message(
             self,
             "Consultando base de logradouros..."

@@ -8,12 +8,12 @@ from frontend.utils.maps.map_logradouro import LogradouroMapPlugin
 from frontend.utils.button import ButtonGate
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
-from typing import Optional
+from typing import Optional, List
 
 class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
 
     name = "LogradouroSelection"
-    input_type = LogradouroSearchResultsDTO
+    input_types = {LogradouroSearchResultsDTO}
     output_type = LogradouroChoiceDTO
     user_error_msg= "Ocorreu um erro ao processar a seleção de logradouro. Por favor, revise os dados e tente novamente."
 
@@ -111,8 +111,9 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
         container_map.markdown(f"#### Visualização do logradouro '{logradouro_name}' no mapa")
         mapa = self.map_plugin(codlog, container=container_map)
         
-    def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: List[LogradouroSearchResultsDTO]) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
+        input_dto = input_dtos[0]
         self.assert_not_match_100(input_dto)
         internal_container = container.container(border=True)
         internal_container.markdown("### Resultados da busca por logradouro")

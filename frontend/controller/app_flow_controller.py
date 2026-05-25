@@ -1,7 +1,7 @@
 from frontend.state import AppState
 from frontend.dto.base import BaseComponentResponse, AppFlowSignal
 from .section import AppSection
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from pydantic import BaseModel
 from collections import OrderedDict
 import streamlit as st
@@ -52,7 +52,7 @@ class AppFlowController:
         st.rerun()
 
 
-    def _resolve_input(self, section: AppSection) -> Optional[BaseModel]:
+    def _resolve_input(self, section: AppSection) -> Optional[List[BaseModel|None]]:
         """
         Define qual dado será injetado no componente. 
         Se houver dependência, extrai o dado da resposta da primeira dependência.
@@ -61,11 +61,10 @@ class AppFlowController:
             return section.initial_data
         
         # Por padrão, pega o dado do primeiro item na lista de dependências
-        first_dep = section.depends_on_names_list[0]
-        parent_resp = self.state.get_response(first_dep)
-        return parent_resp.data if parent_resp else None
+        resps = [self.state.get_response(dep_name) for dep_name in section.depends_on_names]
+        data = [resp.data for resp in resps]
+        return data
     
-
     def trigger_section(self, section: AppSection) -> Optional[BaseComponentResponse[Any]]:
         """
         Tenta renderizar e processar uma seção específica.
@@ -79,11 +78,11 @@ class AppFlowController:
         if not self._check_dependencies(section_interna):
             return None
 
-        input_dto = self._resolve_input(section_interna)
+        input_dtos = self._resolve_input(section_interna)
 
         response = section_interna.component(
             container=section_interna.container,
-            input_dto=input_dto,
+            input_dtos=input_dtos,
             state=self.state
         )
 

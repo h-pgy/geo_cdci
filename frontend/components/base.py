@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Optional, Any, Type
+from typing import Generic, TypeVar, Optional, Any, Type, Set, List
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ T = TypeVar('T', bound=BaseModel)
 
 class UIComponent(ABC, Generic[T]):
     # Sobrescrever esses atributos nas classes filhas quando for o caso
-    input_type: Optional[Type[BaseModel]] = None
+    input_types: Optional[Set[Type[BaseModel]]] = None
     output_type: Optional[Type[BaseModel]] = None
     user_error_msg: str = "Ocorreu uma falha técnica ao carregar este componente."
     name: str = "BaseComponent"
@@ -31,38 +31,60 @@ class UIComponent(ABC, Generic[T]):
     def _render(
         self, 
         container: StreamlitWidget, 
-        input_dto: Optional[BaseModel]
+        input_dtos: Optional[List[BaseModel]]
     ) -> BaseComponentResponse[T]:
         pass
 
+
+
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
+        cls.__check_config_atributes()
         cls._validate_class_name()
+
+
+    @classmethod
+    def __check_config_atributes(cls):
+        '''Checa se os atributos de configuração foram criados corretamente nas classes filhas.'''
+
+        if cls.input_types is not None and not isinstance(cls.input_types, set):
+            raise TypeError(f"{cls.__name__}: 'input_types' deve ser um conjunto de classes Pydantic ou None.")
+        
+        if cls.output_type is not None and not issubclass(cls.output_type, BaseModel):
+            raise TypeError(f"{cls.__name__}: 'output_type' deve ser uma classe Pydantic ou None.")
+        
+        if not isinstance(cls.user_error_msg, str):
+            raise TypeError(f"{cls.__name__}: 'user_error_msg' deve ser uma string.")
+        
+        if not isinstance(cls.name, str):
+            raise TypeError(f"{cls.__name__}: 'name' deve ser uma string.")
 
     @classmethod
     def _validate_class_name(cls):
-        # 1. Verifica se o nome foi alterado
+        #Verifica se o nome foi alterado
         if cls.name == "BaseComponent":
             raise ValueError(
                 f"A classe '{cls.__name__}' não definiu um nome único. "
                 "Por favor, sobrescreva o atributo 'name'."
             )
 
-    def _validate_input(self, input_dto: Optional[BaseModel]) -> None:
-        if self.input_type is None:
-            if input_dto is not None:
+    def _validate_input(self, input_dtos: Optional[List[BaseModel]]) -> None:
+        if self.input_types is None:
+            if input_dtos is not None:
                 raise TypeError(
                     f"{self.__class__.__name__} não espera entrada, "
-                    f"mas recebeu {type(input_dto).__name__}"
+                    f"mas recebeu {[type(dto).__name__ for dto in input_dtos]}"
                 )
             return
 
-        if not isinstance(input_dto, self.input_type):
-            received = type(input_dto).__name__ if input_dto else "None"
-            raise TypeError(
-                f"{self.__class__.__name__} espera {self.input_type.__name__}, "
-                f"mas recebeu {received}"
-            )
+        for input_dto in input_dtos:
+            if type(input_dto) not in self.input_types:
+                received = type(input_dto).__name__ if input_dto else "None"
+                expected = ", ".join([t.__name__ for t in self.input_types])
+                raise TypeError(
+                    f"{self.__class__.__name__} espera {expected}, "
+                    f"mas recebeu {received}"
+                )
 
     def _validate_output(self, response: BaseComponentResponse[T]) -> None:
         if response.signal != AppFlowSignal.GO:
@@ -144,12 +166,11 @@ class UIComponent(ABC, Generic[T]):
         msg_espace.empty()
 
     @st.fragment
-    def _fragment_render(self, target: StreamlitWidget, input_dto: Optional[BaseModel]) -> BaseComponentResponse[T]:
+    def _fragment_render(self, target: StreamlitWidget, input_dtos: Optional[List[BaseModel]]) -> BaseComponentResponse[T]:
 
         internal_container = target.container()
         try:
-            self._validate_input(input_dto)
-            response = self._render(internal_container, input_dto)
+            response = self._render(internal_container, input_dtos)
             response.component_name = self.name
             self._validate_output(response)
             self._render_message(response, internal_container)
@@ -159,11 +180,10 @@ class UIComponent(ABC, Generic[T]):
         except Exception as e:
             return self._handle_exception(internal_container, e)
         
-    def _rerun_render(self, target: StreamlitWidget, input_dto: Optional[BaseModel]) -> BaseComponentResponse[T]:
+    def _rerun_render(self, target: StreamlitWidget, input_dtos: Optional[List[BaseModel]]) -> BaseComponentResponse[T]:
 
         try:
-            self._validate_input(input_dto)
-            response = self._render(target, input_dto)
+            response = self._render(target, input_dtos)
             response.component_name = self.name
             self._validate_output(response)
             self._render_message(response, target)
@@ -177,18 +197,19 @@ class UIComponent(ABC, Generic[T]):
         self, 
         container: StreamlitWidget, 
         state: AppState,
-        input_dto: Optional[BaseModel] = None,
+        input_dtos: Optional[List[BaseModel]] = None,
         fragment=False
     ) -> BaseComponentResponse[T]:
         
         #ai posso usar a resposta anterior dentro do componente como quiser
         self._inject_previous_response(state)
+        self._validate_input(input_dtos)
         with container:
             try:
                 if fragment:
-                    response = self._fragment_render(container, input_dto)
+                    response = self._fragment_render(container, input_dtos)
                 else:
-                    response = self._rerun_render(container, input_dto)
+                    response = self._rerun_render(container, input_dtos)
                 return response
             except Exception as e:
                 return self._handle_exception(container, e)

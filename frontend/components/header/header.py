@@ -72,7 +72,7 @@ class Header(UIComponent[HeaderRenderedDTO]):
             )
             self._render_techical_description()
 
-    def _render(self, container: StreamlitWidget, input_dto: None) -> BaseComponentResponse[HeaderRenderedDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: None) -> BaseComponentResponse[HeaderRenderedDTO]:
 
         self._setup_page_config()
         with container:
