@@ -74,6 +74,13 @@ class AddressMatcher:
             raise ValueError(f'Logradouro {logradouro} não encontrado na base de dados.')
         return df
     
+    def get_full_logradouro_info_by_codlog(self, codlog: str) -> pd.DataFrame:
+        """Dado um código de logradouro, retorna todas as linhas da base que correspondem a ele."""
+        df = self.df[self.df["cd_logradouro"] == codlog]
+        if df.empty:
+            raise ValueError(f'Código de logradouro {codlog} não encontrado na base de dados.')
+        return df
+    
     def get_codlog_by_logradouro(self, logradouro:str)->str:
         """Dado um logradouro, retorna o código do logradouro (codlog) correspondente a ele."""
         df_logradouro = self.get_full_logradouro_info(logradouro)
@@ -113,10 +120,10 @@ class AddressMatcher:
         df = self.get_full_address_info_by_codlog(codlog, numero_porta)
         return df is not None and not df.empty
     
-    def get_nearest_neighbor_addresses(self, logradouro:str, numero_porta:int, n_mais_proximos:int=MAX_ADDRESS_SEARCH_RESULTS)->pd.DataFrame|None:
-        """Dado um logradouro e número de porta, retorna a linha da base que é o vizinho mais próximo do número de porta fornecido."""
+    def get_nearest_neighbor_addresses(self, codlog:str, numero_porta:int, n_mais_proximos:int=MAX_ADDRESS_SEARCH_RESULTS)->pd.DataFrame|None:
+        """Dado um codlog e número de porta, retorna a linha da base que é o vizinho mais próximo do número de porta fornecido."""
         
-        df_logradouro = self.get_full_logradouro_info(logradouro)
+        df_logradouro = self.get_full_logradouro_info_by_codlog(codlog)
         numeros_int = df_logradouro["cd_numero_porta"]
         distancias = (numeros_int - numero_porta).abs()
         n_indices_mais_proximos = distancias.nsmallest(n_mais_proximos).index

@@ -54,13 +54,12 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
     def varios_imoveis(self, container:StreamlitWidget, imoveis: pd.DataFrame, numero:int, logradouro:LogradouroChoiceDTO) -> Optional[PropertyChoiceDTO]:
 
         container.markdown(f"O endereço informado - **{logradouro.logradouro} {numero}** - corresponde a mais de um imóvel em nosso banco de dados. Por favor, selecione o imóvel correto para prosseguir com a emissão da certidão.")
-        data_editor_response = self.data_editor_component.render(container, imoveis, title="Seleção de Imóvel", header_message="Marque a caixa de seleção ao lado do imóvel correspondente ao endereço informado.")
+        index_selecionado = self.data_editor_component.render(imoveis, container, title="Seleção de Imóvel", header_message="Marque a caixa de seleção ao lado do imóvel correspondente ao endereço informado.")
         
-        if data_editor_response is None or data_editor_response.empty:
+        if index_selecionado is None:
             container.warning("Nenhum imóvel selecionado. Por favor, selecione um imóvel para prosseguir.")
-            return None
+            st.stop()
         
-        index_selecionado = data_editor_response.index[0]
         imovel_selecionado = imoveis.loc[index_selecionado]
 
         numero = imovel_selecionado['cd_numero_porta']
