@@ -70,7 +70,10 @@ def main():
     controller.register(logradouro_selecion)
 
     controller.trigger_section(header)        
-    controller.trigger_section(address_form)
+    address_input = controller.trigger_section(address_form)
+    if address_input.signal == AppFlowSignal.NO_GO or address_input.signal ==  AppFlowSignal.ERROR:
+        #nao dá pra seguir no app se não tiver o input de endereço, então a gente para aqui
+        st.stop()
     logradouro_results = controller.trigger_section(logradouro_search) 
     if logradouro_results.signal == AppFlowSignal.GO and logradouro_results.data.match_100:
         controller.trigger_section(perfect_match_logradouro)

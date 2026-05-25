@@ -3,7 +3,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 from api.services.map.geojson_layer import GeoJsonLayerFactory
 from api.services.map.tile_layer import add_mapa_base, add_ortofoto
-from frontend.utils.maps.cached_wfs_fetchers import cached_logradouro_line_fetcher
+from frontend.utils.maps.cached_map_utils import cached_logradouro_line_fetcher
 import geopandas as gpd
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 
