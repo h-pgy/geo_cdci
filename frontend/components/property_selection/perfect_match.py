@@ -9,7 +9,8 @@ from frontend.components.property_selection.property_selection_subcomponent impo
 from typing import Optional, Tuple
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
-from frontend.utils.message import error_message, success_message
+from frontend.utils.message import error_message, info_message, success_message
+from frontend.utils.button import ButtonGate
 
 class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
@@ -67,6 +68,28 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
         return data
     
+    def not_found_reinit(self, container:StreamlitWidget) -> bool:
+
+        key_short_circuit_button = "imovel_nao_encontrado_perfect_match"
+        gate_short_circuit = ButtonGate(key_short_circuit_button)
+        space_short_circuit = container.empty()
+        button_short_circuit = container.button("O imóvel acima não é o imóvel esperado?", type="tertiary", on_click=gate_short_circuit.press)
+        if gate_short_circuit.is_pressed:
+            container_info_short_circuit = space_short_circuit.container(border=True)
+            container_info_short_circuit.warning("Lamentamos que o resultado não tenha atendido às suas expectativas.", icon=":material/x_circle:")
+            container_info_short_circuit.write('Tente realizar a busca novamente, certificando-se de que o número do imóvel esteja correto e completo.')
+            container_info_short_circuit.write('Caso o sistema não consiga encontrar o imóvel, não será possível a emissão da certidão de formar automatizada. Nesse caso, sugerimos solicitar a certidão manual pelo 156.')
+            button_nova_busca = container_info_short_circuit.button("Realizar nova busca", type="primary", key="realizar_nova_busca_imovel_selection")
+            button_continuar = container_info_short_circuit.button("Continuar mesmo assim", type="secondary", key="continuar_mesmo_assim_imovel_selection")
+            if not (button_nova_busca or button_continuar):
+                container_info_short_circuit.info("Favor escolher uma das opções para prosseguir.", icon=":material/info:")
+                st.stop()
+            if button_nova_busca:
+                return True
+        gate_short_circuit.reset()
+        space_short_circuit.empty()
+        return False
+    
     
     def _render(self, container: StreamlitWidget, input_dtos: Tuple[LogradouroChoiceDTO, AddressInputDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
 
@@ -84,7 +107,6 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
         internal_container = container.container(border=True)
         internal_container.markdown("### Imóvel.")
-
         internal_container.info(f"Endereço {logradouro_choice.logradouro} {address_input.numero} encontrado em nosso banco de dados. Verifique as informações abaixo e prossiga para emissão da certidão.")
 
         if imoveis.shape[0]==1:
@@ -94,6 +116,14 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
         else:
             data = self.varios_imoveis(internal_container, imoveis, address_input.numero, logradouro_choice)
             
+        not_found_rerun = self.not_found_reinit(internal_container)
+        if not_found_rerun:
+            return BaseComponentResponse(
+                data=None,
+                signal=AppFlowSignal.RERUN,
+                message=info_message(self, "Reiniciando a busca por imóvel para que você possa inserir uma nova consulta.")
+            )
         
+        message = success_message(self, "Imóvel encontrado no banco de dados com sucesso! Prosseguindo para a próxima etapa.")
 
-        return BaseComponentResponse(signal=AppFlowSignal.GO, data=data)
+        return BaseComponentResponse(signal=AppFlowSignal.GO, data=data, message=message)
