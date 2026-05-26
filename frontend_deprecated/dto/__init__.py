@@ -1,2 +1,0 @@
-from .address_search_input import AddressSearchInputDTO
-from .logradouro_match import LogradouroMatchDTO, LogradouroSearchResultsDTO
