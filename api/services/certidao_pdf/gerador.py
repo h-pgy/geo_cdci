@@ -9,11 +9,15 @@ class GeradorCertidao:
         self.layout = LayoutCertidao(model)
 
     def gerar_pdf(self, sections:list[str], output_path: str):
+        
+        self.layout.add_page()
+        self.layout.header()
         self.layout.alias_nb_pages()
         self.layout.add_page()
-        
+        self.layout.watermark()
         for section in sections:
             self.layout.write_section(section)
+        self.layout.footer()
 
     def salvar_pdf(self, output_path: str)->str:
         self.layout.output(output_path)
