@@ -13,7 +13,7 @@ class AppSection(BaseModel):
 
     component: UIComponent
     container: StreamlitWidget
-    initial_data: Optional[BaseModel] = None
+    initial_data: Optional[List[BaseModel]] = None
     
     _depends_on_sections: List["AppSection"] = PrivateAttr(default_factory=list)
 
@@ -71,12 +71,18 @@ class AppSection(BaseModel):
         Valida se o DTO de saída do Alter é compatível com o DTO de entrada do Ego.
         """
         alter_output = other.component.output_type
-        ego_input = self.component.input_type
+        ego_input = self.component.input_types
 
-        if not issubclass(alter_output, ego_input):
+        if alter_output is None and ego_input is not None:
+            raise TypeError(
+                f"Contrato Inválido: '{other.name}' não produz dados, "
+                f"mas '{self.name}' requer {', '.join([t.__name__ for t in ego_input])}."
+            )
+
+        if alter_output not in ego_input:
             raise TypeError(
                 f"Contrato Inválido: '{other.name}' produz {alter_output.__name__}, "
-                f"mas '{self.name}' requer {ego_input.__name__}."
+                f"mas '{self.name}' requer {', '.join([t.__name__ for t in ego_input])}."
             )
 
     def remove_dependency(self, section_name: str):

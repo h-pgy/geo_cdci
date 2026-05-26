@@ -1,0 +1,133 @@
+from frontend.components.base import UIComponent
+from frontend.dto.base import BaseComponentResponse, AppFlowSignal
+from frontend.dto.address_input import AddressInputDTO
+from frontend.dto.logradouro_fuzzy_search import LogradouroChoiceDTO
+from frontend.dto.property_match import PropertyChoiceDTO
+from api.services.fuzzy_iptu_address_search import AddressMatcher
+import pandas as pd
+from frontend.components.property_selection.property_selection_subcomponent import DataEditorPropertyChoice
+from typing import Optional, Tuple
+import streamlit as st
+from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
+from frontend.utils.message import error_message, info_message, success_message
+from frontend.utils.button import ButtonGate
+from frontend.utils.maps.map_lote_unico import LoteUnicoMapPlugin
+
+class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
+
+    name = "PerfectPropertyMatch"
+    user_error_msg = "O endereço selecionado existe em nosso banco de dados. No entanto, ocorreu um erro ao processar os dados para emissão da certidão. Entre em contato com o suporte"
+    input_types={AddressInputDTO, LogradouroChoiceDTO}
+    output_type=PropertyChoiceDTO
+
+    def __init__(self, matcher: Optional[AddressMatcher] = None)->None:
+        self.matcher = matcher or AddressMatcher()
+        self.data_editor_component = DataEditorPropertyChoice(submit_button_key="perfect_match_submit")
+        self.render_map_lote = LoteUnicoMapPlugin()
+
+    def extract_codlog(self, logradouro_choice: LogradouroChoiceDTO) -> str:
+        return logradouro_choice.codlog
+    
+    def extract_numero_porta(self, address_input: AddressInputDTO) -> int:
+        return int(address_input.numero)
+
+    def get_address_info(self, logradouro_choice: LogradouroChoiceDTO, address_input: AddressInputDTO) -> Optional[pd.DataFrame]:
+        
+        codlog = self.extract_codlog(logradouro_choice)
+        numero_porta = self.extract_numero_porta(address_input)
+        return self.matcher.get_full_address_info_by_codlog(codlog, numero_porta)
+    
+    def unico_imovel(self, container:StreamlitWidget, imoveis: pd.DataFrame, numero:int, logradouro:LogradouroChoiceDTO) -> PropertyChoiceDTO:
+
+        container.markdown(f"O endereço informado - **{logradouro.logradouro} {numero}** - correspondete ao imóvel abaixo.")
+        imoveis_exibicao = self.data_editor_component.clean_dataframe(imoveis) 
+        container.write(imoveis_exibicao)
+
+        imovel_selecionado = imoveis.iloc[0]
+        cd_identificador_lote = imovel_selecionado['cd_identificador']
+        numero = imovel_selecionado['cd_numero_porta']
+
+        data = PropertyChoiceDTO(numero=numero, logradouro_escolhido=logradouro, cd_identificador_lote=cd_identificador_lote)
+
+        return data
+    
+    def varios_imoveis(self, container:StreamlitWidget, imoveis: pd.DataFrame, numero:int, logradouro:LogradouroChoiceDTO) -> Optional[PropertyChoiceDTO]:
+
+        container.markdown(f"O endereço informado - **{logradouro.logradouro} {numero}** - corresponde a mais de um imóvel em nosso banco de dados. Por favor, selecione o imóvel correto para prosseguir com a emissão da certidão.")
+        index_selecionado = self.data_editor_component.render(imoveis, container, title="Seleção de Imóvel", header_message="Marque a caixa de seleção ao lado do imóvel correspondente ao endereço informado.")
+        
+        if index_selecionado is None:
+            container.warning("Nenhum imóvel selecionado. Por favor, selecione um imóvel para prosseguir.")
+            st.stop()
+        
+        imovel_selecionado = imoveis.loc[index_selecionado]
+
+        numero = imovel_selecionado['cd_numero_porta']
+        cd_identificador_lote = imovel_selecionado['cd_identificador']
+
+        data = PropertyChoiceDTO(numero=numero, logradouro_escolhido=logradouro, cd_identificador_lote=cd_identificador_lote)
+
+        return data
+    
+    def not_found_reinit(self, container:StreamlitWidget) -> bool:
+
+        key_short_circuit_button = "imovel_nao_encontrado_perfect_match"
+        gate_short_circuit = ButtonGate(key_short_circuit_button)
+        space_short_circuit = container.empty()
+        button_short_circuit = container.button("O imóvel acima não é o imóvel esperado?", type="tertiary", on_click=gate_short_circuit.press)
+        if gate_short_circuit.is_pressed:
+            container_info_short_circuit = space_short_circuit.container(border=True)
+            container_info_short_circuit.warning("Lamentamos que o resultado não tenha atendido às suas expectativas.", icon=":material/x_circle:")
+            container_info_short_circuit.write('Tente realizar a busca novamente, certificando-se de que o número do imóvel esteja correto e completo.')
+            container_info_short_circuit.write('Caso o sistema não consiga encontrar o imóvel, não será possível a emissão da certidão de formar automatizada. Nesse caso, sugerimos solicitar a certidão manual pelo 156.')
+            button_nova_busca = container_info_short_circuit.button("Realizar nova busca", type="primary", key="realizar_nova_busca_imovel_selection")
+            button_continuar = container_info_short_circuit.button("Continuar mesmo assim", type="secondary", key="continuar_mesmo_assim_imovel_selection")
+            if not (button_nova_busca or button_continuar):
+                container_info_short_circuit.info("Favor escolher uma das opções para prosseguir.", icon=":material/info:")
+                st.stop()
+            if button_nova_busca:
+                return True
+        gate_short_circuit.reset()
+        space_short_circuit.empty()
+        return False
+    
+    
+    def _render(self, container: StreamlitWidget, input_dtos: Tuple[LogradouroChoiceDTO, AddressInputDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
+
+        logradouro_choice, address_input = input_dtos
+
+        imoveis = self.get_address_info(
+            logradouro_choice=logradouro_choice,
+            address_input=address_input
+        )
+
+        if imoveis is None or imoveis.empty:
+            error_msg_txt = "Não foi possível encontrar informações para o endereço selecionado. Por favor, verifique os dados e tente novamente."
+            error_msg_obj = error_message(self, error_msg_txt)
+            return BaseComponentResponse(signal=AppFlowSignal.ERROR, data=None, message=error_msg_obj)
+
+        internal_container = container.container(border=True)
+        internal_container.markdown("### Imóvel.")
+        internal_container.info(f"Endereço {logradouro_choice.logradouro} {address_input.numero} encontrado em nosso banco de dados. Verifique as informações abaixo e prossiga para emissão da certidão.")
+
+        col_dados, col_mapa = internal_container.columns([1,2])
+        self.render_map_lote(cd_identificador=imoveis['cd_identificador'].iloc[0], container=col_mapa)
+
+        if imoveis.shape[0]==1:
+            
+            data = self.unico_imovel(col_dados, imoveis, address_input.numero, logradouro_choice)
+
+        else:
+            data = self.varios_imoveis(col_dados, imoveis, address_input.numero, logradouro_choice)
+            
+        not_found_rerun = self.not_found_reinit(internal_container)
+        if not_found_rerun:
+            return BaseComponentResponse(
+                data=None,
+                signal=AppFlowSignal.RERUN,
+                message=info_message(self, "Reiniciando a busca por imóvel para que você possa inserir uma nova consulta.")
+            )
+        
+        message = success_message(self, "Imóvel encontrado no banco de dados com sucesso! Prosseguindo para a próxima etapa.")
+
+        return BaseComponentResponse(signal=AppFlowSignal.GO, data=data, message=message)

@@ -7,8 +7,8 @@ from frontend.utils.button import ButtonGate
 import re
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
-import time
 from frontend.config import settings
+from typing import List
 
 ERROR_MSG_DURATION_SECONDS = settings.ERROR_MSG_DURATION_SECONDS
 
@@ -16,7 +16,7 @@ class AddressForm(UIComponent[AddressInputDTO]):
 
     name = "AddressForm"
     user_error_msg = "Ocorreu um erro ao processar o formulário de endereço. Por favor, revise suas entradas e tente novamente."
-    input_type=HeaderRenderedDTO
+    input_types={HeaderRenderedDTO}
     output_type=AddressInputDTO
 
     def logradouro_input(self):
@@ -145,8 +145,9 @@ class AddressForm(UIComponent[AddressInputDTO]):
                     st.stop()
                 return self.button_callback.is_pressed, logradouro, numero
 
-    def _render(self, container: StreamlitWidget, input_dto: HeaderRenderedDTO) -> BaseComponentResponse[AddressInputDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: List[HeaderRenderedDTO]) -> BaseComponentResponse[AddressInputDTO]:
 
+        input_dto = input_dtos[0]
         if not input_dto.rendered:
             return BaseComponentResponse(signal=AppFlowSignal.NO_GO, message=message.info_message(self, "Aguardando o carregamento do cabeçalho para exibir o formulário de endereço."))
 

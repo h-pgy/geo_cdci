@@ -21,7 +21,8 @@ def download_enderecos_lotes()->pd.DataFrame:
     fetcher = WFSFetcher()
     query_params = {
         'propertyName' : 'cd_identificador,cd_logradouro,nm_logradouro_completo,cd_numero_porta,tx_complemento_endereco',
-        "CQL_FILTER": "tx_situ_lote='ATIVO'"
+        "CQL_FILTER": "tx_situ_lote='ATIVO'" #precisa rever aqui porque bizarramente condominios nao tem esse atributo, 
+        #aí tem que ir pelo codigo da situacao
     }
     lotes_lista = []
 

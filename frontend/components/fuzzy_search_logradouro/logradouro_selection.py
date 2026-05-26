@@ -8,12 +8,12 @@ from frontend.utils.maps.map_logradouro import LogradouroMapPlugin
 from frontend.utils.button import ButtonGate
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
-from typing import Optional
+from typing import Optional, List
 
 class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
 
     name = "LogradouroSelection"
-    input_type = LogradouroSearchResultsDTO
+    input_types = {LogradouroSearchResultsDTO}
     output_type = LogradouroChoiceDTO
     user_error_msg= "Ocorreu um erro ao processar a seleção de logradouro. Por favor, revise os dados e tente novamente."
 
@@ -83,21 +83,54 @@ class LogradouroSelection(UIComponent[LogradouroChoiceDTO]):
 
                 return escolha
             
+    def not_found_reinit(self, container:StreamlitWidget) -> bool:
+
+        key_short_circuit_button = "logradouro_nao_encontrado_logradouro_selection"
+        gate_short_circuit = ButtonGate(key_short_circuit_button)
+        space_short_circuit = container.empty()
+        button_short_circuit = container.button("Você não encontrou o logradouro esperado?", type="tertiary", on_click=gate_short_circuit.press)
+        if gate_short_circuit.is_pressed:
+            container_info_short_circuit = space_short_circuit.container(border=True)
+            container_info_short_circuit.warning("Lamentamos que o resultado não tenha atendido às suas expectativas.", icon=":material/x_circle:")
+            container_info_short_circuit.write('Tente realizar a busca novamente, certificando-se de que o nome do logradouro esteja correto e completo.')
+            container_info_short_circuit.write('Caso o sistema não consiga encontrar o logradouro, não será possível a emissão da certidão de formar automatizada. Nesse caso, sugerimos solicitar a certidão manual pelo 156.')
+            button_nova_busca = container_info_short_circuit.button("Realizar nova busca", type="primary", key="realizar_nova_busca_logradouro_selection")
+            button_continuar = container_info_short_circuit.button("Continuar mesmo assim", type="secondary", key="continuar_mesmo_assim_logradouro_selection")
+            if not (button_nova_busca or button_continuar):
+                container_info_short_circuit.info("Favor escolher uma das opções para prosseguir.", icon=":material/info:")
+                st.stop()
+            if button_nova_busca:
+                return True
+        gate_short_circuit.reset()
+        space_short_circuit.empty()
+        return False
+            
     def show_map(self, container: StreamlitWidget, codlog: str, logradouro_name:str) -> None:
 
         container_map = container.container(border=True)
         container_map.markdown(f"#### Visualização do logradouro '{logradouro_name}' no mapa")
         mapa = self.map_plugin(codlog, container=container_map)
         
-    def _render(self, container: StreamlitWidget, input_dto: LogradouroSearchResultsDTO) -> BaseComponentResponse[LogradouroChoiceDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: List[LogradouroSearchResultsDTO]) -> BaseComponentResponse[LogradouroChoiceDTO]:
         
+        input_dto = input_dtos[0]
         self.assert_not_match_100(input_dto)
         internal_container = container.container(border=True)
         internal_container.markdown("### Resultados da busca por logradouro")
         internal_container.info("Não encontramos um match perfeito para o logradouro digitado. Por favor, selecione a opção correta abaixo para prosseguir.", icon=":material/info:")
+        not_found_rerun = self.not_found_reinit(internal_container)
+        if not_found_rerun:
+            return BaseComponentResponse(
+                data=None,
+                signal=AppFlowSignal.RERUN,
+                message=info_message(self, "Reiniciando a busca por logradouro para que você possa inserir uma nova consulta.")
+            )
+        results_container = internal_container.container()
+        col_form, col_map = results_container.columns([1,2])
+        escolha = self.form(input_dto, col_form)
+        
 
-        escolha = self.form(input_dto, internal_container)
-        results = self.process_choice(escolha, input_dto, internal_container)
+        results = self.process_choice(escolha, input_dto, col_form)
         codlog = results.data.codlog
-        self.show_map(internal_container, codlog, escolha)
+        self.show_map(col_map, codlog, escolha)
         return results

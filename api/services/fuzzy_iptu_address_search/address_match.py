@@ -9,13 +9,25 @@ MAX_ADDRESS_SEARCH_RESULTS=settings.MAX_ADDRESS_SEARCH_RESULTS
 ADDRESS_SEARCH_FUZZY_SCORE_THRESHOLD=settings.ADDRESS_SEARCH_FUZZY_SCORE_THRESHOLD
 
 class AddressMatcher:
+
+    valor_sentinela = -9999999999
+
     def __init__(self, address_df: pd.DataFrame|None=None):
 
         self.df = address_df if address_df is not None else download_enderecos_lotes()
+        self.df = self.process_numero_porta_to_int(self.df)
         self.preprocess_input = AddressStringProcessor()
         # Pré-processamos a lista de busca uma única vez no init
         # (Assumindo que nm_logradouro_completo já está limpo na base)
         self.unique_logradouros = self.df["nm_logradouro_completo"].unique().tolist()
+
+
+    def process_numero_porta_to_int(self, df:pd.DataFrame)->pd.DataFrame:
+        """Converte o número da porta para inteiro, tratando casos como 'S/N' ou valores não numéricos.
+        O valor sentinela deve ser um valor grande negativo para não interferir na busca de vizinhos mais próximos, garantindo que endereços sem número ou com número não numérico fiquem no final da lista de proximidade."""
+        
+        df['cd_numero_porta'] = df['cd_numero_porta'].replace('S/N', self.valor_sentinela).astype(int)
+        return df
 
     def find_matches(self, user_input: str, remove_logradouro_type:bool=False, limit: int = MAX_ADDRESS_SEARCH_RESULTS, 
                      threshold: float = ADDRESS_SEARCH_FUZZY_SCORE_THRESHOLD) -> List[Dict]:
@@ -62,6 +74,13 @@ class AddressMatcher:
             raise ValueError(f'Logradouro {logradouro} não encontrado na base de dados.')
         return df
     
+    def get_full_logradouro_info_by_codlog(self, codlog: str) -> pd.DataFrame:
+        """Dado um código de logradouro, retorna todas as linhas da base que correspondem a ele."""
+        df = self.df[self.df["cd_logradouro"] == codlog]
+        if df.empty:
+            raise ValueError(f'Código de logradouro {codlog} não encontrado na base de dados.')
+        return df
+    
     def get_codlog_by_logradouro(self, logradouro:str)->str:
         """Dado um logradouro, retorna o código do logradouro (codlog) correspondente a ele."""
         df_logradouro = self.get_full_logradouro_info(logradouro)
@@ -72,7 +91,7 @@ class AddressMatcher:
             raise ValueError(f'Logradouro {logradouro} corresponde a múltiplos códigos de logradouro na base de dados: {codlogs}.')
         return codlogs[0]
     
-    def get_full_address_info(self, logradouro:str, numero_porta:str)->pd.DataFrame|None:
+    def get_full_address_info_by_logradouro(self, logradouro:str, numero_porta:int)->pd.DataFrame|None:
 
         """Dado um logradouro e número de porta, retorna as linhas da base que correspondem a ambos."""
         df = self.df[
@@ -84,14 +103,28 @@ class AddressMatcher:
             return None
         return df
     
-    def get_nearest_neighbor_addresses(self, logradouro:str, numero_porta:int, n_mais_proximos:int=MAX_ADDRESS_SEARCH_RESULTS)->pd.DataFrame|None:
-        """Dado um logradouro e número de porta, retorna a linha da base que é o vizinho mais próximo do número de porta fornecido."""
+    def get_full_address_info_by_codlog(self, codlog:str, numero_porta:int)->pd.DataFrame|None:
+
+        """Dado um código de logradouro e número de porta, retorna as linhas da base que correspondem a ambos."""
+        df = self.df[
+            (self.df["cd_logradouro"] == codlog) & 
+            (self.df["cd_numero_porta"] == numero_porta)
+        ]
+
+        if df.empty:
+            return None
+        return df
+    
+    def is_full_match(self, codlog:str, numero_porta:int)->bool:
+        """Verifica se há um match completo (logradouro + número de porta) na base."""
+        df = self.get_full_address_info_by_codlog(codlog, numero_porta)
+        return df is not None and not df.empty
+    
+    def get_nearest_neighbor_addresses(self, codlog:str, numero_porta:int, n_mais_proximos:int=MAX_ADDRESS_SEARCH_RESULTS)->pd.DataFrame|None:
+        """Dado um codlog e número de porta, retorna a linha da base que é o vizinho mais próximo do número de porta fornecido."""
         
-        df_logradouro = self.get_full_logradouro_info(logradouro)
-        # Para calcular a distância entre os números de porta, precisamos garantir que eles sejam numéricos.
-        # eu definio o valor_sentinela como um número muito baixo para garantir que endereços sem número de porta ou com número não numérico fiquem no final da lista de proximidade.
-        valor_sentinela = -9999999999
-        numeros_int = pd.to_numeric(df_logradouro["cd_numero_porta"], errors='coerce').fillna(valor_sentinela).astype(int)
+        df_logradouro = self.get_full_logradouro_info_by_codlog(codlog)
+        numeros_int = df_logradouro["cd_numero_porta"]
         distancias = (numeros_int - numero_porta).abs()
         n_indices_mais_proximos = distancias.nsmallest(n_mais_proximos).index
         return df_logradouro.loc[n_indices_mais_proximos]
