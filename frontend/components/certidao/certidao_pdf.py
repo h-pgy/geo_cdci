@@ -9,7 +9,7 @@ from frontend.utils.button import ButtonGate
 from frontend.dto.certidao import CertidaoDTO, DadosImovelCertidaoDTO
 from frontend.utils.static import static_path
 from frontend.utils.message import error_message, info_message, success_message
-from api.services.lote.lote_location_map_png import LoteLocationMapPNGService
+from frontend.utils.maps.cached_map_utils import cached_mapa_lote_certidao
 from typing import Any
 import streamlit as st
 import os
@@ -40,7 +40,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         self.fetch_lote_data = LoteDataFetcher()
         self.conveter_data_por_extenso = ConversorDataExtenso()
         self.tempdir = tempfile.gettempdir()
-        self.gerar_img_mapa_lote = LoteLocationMapPNGService(raster=True, convert_to_4326=False, default_width=512, default_height=512)
+        self.gerar_img_mapa_lote = cached_mapa_lote_certidao
 
     def parse_lote_data_to_certidao_model(self, lote_data: dict[str, Any]) -> DadosImovelCertidaoDTO:
 
@@ -106,7 +106,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
         return [inicio, identificacao_imovel, despacho]
 
-    def gerar_certidao_model(self, dados_imovel: DadosImovelCertidaoDTO, property_choice: PropertyChoiceDTO) -> CertidaoModel:
+    def gerar_certidao_model(self, property_choice: PropertyChoiceDTO) -> CertidaoModel:
 
         cabecalho = "Certidão de Existência de Lançamento - IPTU"
         logo_cabecalho = static_path("logo_horizontal.png")
@@ -131,7 +131,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
     def gerar_pdf_certidao(self, dados_imovel: DadosImovelCertidaoDTO, property_choice: PropertyChoiceDTO) -> str:
 
-        certidao_model = self.gerar_certidao_model(dados_imovel, property_choice)
+        certidao_model = self.gerar_certidao_model(property_choice)
         gerar_certidao = GeradorCertidao(certidao_model)
         secoes = self.secoes_certidao(dados_imovel)
 
