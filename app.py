@@ -136,24 +136,29 @@ def main(debug: bool = True):
             selected_imovel = controller.trigger_section(perfect_property_match)
             if selected_logradouro.signal == AppFlowSignal.GO:
                 controller.bypass_section(near_neighboors_property_match, data=selected_imovel.data)
-            certidao_dependency = perfect_property_match
+                certidao_dependency = perfect_property_match
         else:
             selected_imovel = controller.trigger_section(near_neighboors_property_match)
             if selected_logradouro.signal == AppFlowSignal.GO:
                 controller.bypass_section(perfect_property_match, data=selected_imovel.data)
-            certidao_dependency = near_neighboors_property_match
+                certidao_dependency = near_neighboors_property_match
+    else:
+        st.stop()
 
     # --------- CERTIDAO PDF GENERATION SECTION -----------------------------
 
-    certidao_pdf_space = main_container.container()
-    certidao_pdf_component = AppSection(
-        container=certidao_pdf_space,
-        component=CertidaoPDFComponent()
-    )
+    if selected_imovel.signal == AppFlowSignal.GO:
+        certidao_pdf_space = main_container.container()
+        certidao_pdf_component = AppSection(
+            container=certidao_pdf_space,
+            component=CertidaoPDFComponent()
+        )
 
-    certidao_pdf_component.add_dependency(certidao_dependency)
-    controller.register(certidao_pdf_component)
-    controller.trigger_section(certidao_pdf_component)
+        certidao_pdf_component.add_dependency(certidao_dependency)
+        controller.register(certidao_pdf_component)
+        controller.trigger_section(certidao_pdf_component)
+    else:
+        st.stop()
 
     # ---------- DEBUG SECTION -----------------------------
     if debug:

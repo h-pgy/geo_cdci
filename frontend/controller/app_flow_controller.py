@@ -61,7 +61,7 @@ class AppFlowController:
             return section.initial_data
         
         # Por padrão, pega o dado do primeiro item na lista de dependências
-        resps = [self.state.get_response(dep_name) for dep_name in section.depends_on_names]
+        resps = [self.state.get_response(dep_name) for dep_name in section.depends_on_names_list]
         data = [resp.data for resp in resps]
         return data
     
