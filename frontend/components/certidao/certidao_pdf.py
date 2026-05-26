@@ -42,8 +42,6 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
     def parse_lote_data_to_certidao_model(self, lote_data: dict[str, any]) -> DadosImovelCertidaoDTO:
 
         certidao_data = {}
-        print('*' * 30)
-        print("Lote data:", lote_data)  # Debug: Verificar os dados do lote
         for certidao_attr, lote_attr in self.atributos_imovel_certidao.items():
             certidao_data[certidao_attr] = lote_data.get(lote_attr, "")
         print("Certidão data mapeada:", certidao_data)  # Debug: Verificar os dados mapeados para a certidão
