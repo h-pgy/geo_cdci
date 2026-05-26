@@ -9,6 +9,8 @@ from frontend.utils.button import ButtonGate
 from frontend.dto.certidao import CertidaoDTO, DadosImovelCertidaoDTO
 from frontend.utils.static import static_path
 from frontend.utils.message import error_message, info_message, success_message
+from frontend.utils.maps.cached_map_utils import cached_mapa_lote_certidao
+from typing import Any
 import streamlit as st
 import os
 import tempfile
@@ -28,7 +30,8 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         "codlog": "cd_logradouro",
         "cd_setor": "cd_setor_fiscal",
         "cd_quadra": "cd_quadra_fiscal",
-        "cd_lote": "cd_lote"
+        "cd_lote": "cd_lote",
+        "cd_digito_sql" : "cd_digito_sql"
     }
 
     def __init__(self)->None:
@@ -37,12 +40,11 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         self.fetch_lote_data = LoteDataFetcher()
         self.conveter_data_por_extenso = ConversorDataExtenso()
         self.tempdir = tempfile.gettempdir()
+        self.gerar_img_mapa_lote = cached_mapa_lote_certidao
 
-    def parse_lote_data_to_certidao_model(self, lote_data: dict[str, any]) -> DadosImovelCertidaoDTO:
+    def parse_lote_data_to_certidao_model(self, lote_data: dict[str, Any]) -> DadosImovelCertidaoDTO:
 
         certidao_data = {}
-        print('*' * 30)
-        print("Lote data:", lote_data)  # Debug: Verificar os dados do lote
         for certidao_attr, lote_attr in self.atributos_imovel_certidao.items():
             certidao_data[certidao_attr] = lote_data.get(lote_attr, "")
         print("Certidão data mapeada:", certidao_data)  # Debug: Verificar os dados mapeados para a certidão
@@ -59,21 +61,20 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         container.markdown("#### Dados do Imóvel")
         container.markdown(f"- **Número**: {dados_imovel.numero}")
         container.markdown(f"- **Logradouro**: {dados_imovel.logradouro}")
-        container.markdown(f"- **Complemento**: {dados_imovel.complemento}")
+        if dados_imovel.complemento is not None:
+            container.markdown(f"- **Complemento**: {dados_imovel.complemento}")
         container.markdown(f"- **Código do Logradouro**: {dados_imovel.codlog}")
         container.markdown(f"- **Setor/Quadra/Lote**: {dados_imovel.setor_quadra_lote}")
 
     def despacho(self, dados_imovel: DadosImovelCertidaoDTO) -> str:
 
-        despacho = """
-
-        ####Despacho
+        despacho = """## Despacho
 
         ** Solicitação Deferida **
 
         Com base nas informações consultadas de forma automatizada junto à base de dados oficial do município de São Paulo, declara-se que o imóvel:
 
-        * Possui lançamento do Imposto Predial e Territorial Urbano (IPTU) pelo contribuinte número {setor_quadra_lote}
+            . Possui lançamento do Imposto Predial e Territorial Urbano (IPTU) pelo contribuinte número {setor_quadra_lote}
         
         """
 
@@ -81,17 +82,18 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
     
     def identificacao_do_imovel(self, dados_imovel: DadosImovelCertidaoDTO) -> str:
 
-        identificacao = """
+        identificacao = """## Identificação do Imóvel
 
-        ####Identificação do Imóvel
+        O imóvel objeto desta certidão está localizado no endereço {logradouro} (codlog: {codlog}), número {numero}"""
 
-        O imóvel objeto desta certidão está localizado no endereço {logradouro}, número {numero}, complemento {complemento}, código do logradouro {codlog}.
+        if dados_imovel.complemento:
+            identificacao += f", complemento {dados_imovel.complemento}."
+        else:
+            identificacao += "."
 
-        """
         return identificacao.format(
             logradouro=dados_imovel.logradouro,
             numero=dados_imovel.numero,
-            complemento=dados_imovel.complemento,
             codlog=dados_imovel.codlog
         )
 
@@ -104,25 +106,32 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
         return [inicio, identificacao_imovel, despacho]
 
-    def gerar_certidao_model(self, dados_imovel: DadosImovelCertidaoDTO) -> CertidaoModel:
+    def gerar_certidao_model(self, property_choice: PropertyChoiceDTO) -> CertidaoModel:
 
         cabecalho = "Certidão de Existência de Lançamento - IPTU"
         logo_cabecalho = static_path("logo_horizontal.png")
         logo_watermark = static_path("logo_vertical.png")
         rodape = "Esta certidão foi emitida de forma automatizada."
+        mapa_lote_path = self.gerar_mapa_lote(property_choice)
 
         return CertidaoModel(
             header=cabecalho,
             path_header_logo=logo_cabecalho,
             path_watermark=logo_watermark,
             footer=rodape,
-            space_between_sections=6
+            space_between_sections=2,
+            mapa_lote_path=mapa_lote_path
             )
 
+    def gerar_mapa_lote(self, property_choice: PropertyChoiceDTO) -> str:
 
-    def gerar_pdf_certidao(self, dados_imovel: DadosImovelCertidaoDTO) -> str:
+        id_lote = property_choice.cd_identificador_lote
+        output_file = f"mapa_lote_{id_lote}.png"
+        return self.gerar_img_mapa_lote(id_lote, output_file)
 
-        certidao_model = self.gerar_certidao_model(dados_imovel)
+    def gerar_pdf_certidao(self, dados_imovel: DadosImovelCertidaoDTO, property_choice: PropertyChoiceDTO) -> str:
+
+        certidao_model = self.gerar_certidao_model(property_choice)
         gerar_certidao = GeradorCertidao(certidao_model)
         secoes = self.secoes_certidao(dados_imovel)
 
@@ -147,16 +156,15 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
             return ":material/check_circle:"
 
 
-    def subsecao_gerar_certidao(self, container: StreamlitWidget, dados_imovel: DadosImovelCertidaoDTO):
+    def subsecao_gerar_certidao(self, container: StreamlitWidget, dados_imovel: DadosImovelCertidaoDTO, button_gate: ButtonGate, property_choice: PropertyChoiceDTO):
 
-        gate_triger_certidao = ButtonGate("trigger_gerar_certidao")
+    
+        botao_text = self.button_gerar_certidao_txt(button_gate)
+        botao_gerar= container.button(botao_text, on_click=button_gate.press)
 
-        botao_text = self.button_gerar_certidao_txt(gate_triger_certidao)
-        botao_gerar= container.button(botao_text, on_click=gate_triger_certidao.press)
-
-        if gate_triger_certidao.is_pressed:
+        if button_gate.is_pressed:
             with container.spinner("Gerando certidão..."):
-                caminho_certidao = self.gerar_pdf_certidao(dados_imovel)
+                caminho_certidao = self.gerar_pdf_certidao(dados_imovel, property_choice)
                 success_message(container, "Certidão gerada com sucesso!")
                 return caminho_certidao
         else:
@@ -186,7 +194,9 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
         dados_imovel = self.dados_imovel(property_choice)
         self.subsecao_dados_imovel(internal_container, dados_imovel)
-        path_certidao = self.subsecao_gerar_certidao(internal_container, dados_imovel)
+
+        gate_triger_certidao = ButtonGate("trigger_gerar_certidao")
+        path_certidao = self.subsecao_gerar_certidao(internal_container, dados_imovel, gate_triger_certidao, property_choice)
 
         button_download_gate = ButtonGate("trigger_download_certidao")
         if os.path.exists(path_certidao):
@@ -201,6 +211,9 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
                 dados_imovel=dados_imovel,
                 input_data=property_choice
             )
+            #desaperta botao de atualizar
+            gate_triger_certidao.reset()
+
             message = success_message(self, "Certidão baixada com sucesso!")
             return BaseComponentResponse(data=data, signal=AppFlowSignal.GO, message=message)
         else:

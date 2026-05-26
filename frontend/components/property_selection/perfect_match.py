@@ -111,7 +111,7 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
         internal_container.info(f"Endereço {logradouro_choice.logradouro} {address_input.numero} encontrado em nosso banco de dados. Verifique as informações abaixo e prossiga para emissão da certidão.")
 
         col_dados, col_mapa = internal_container.columns([1,2])
-        self.render_map_lote(cd_identificador=imoveis['cd_identificador'].iloc[0], container=col_mapa)
+        self.render_map_lote(cd_identificador=imoveis['cd_identificador'].iloc[0], container=col_mapa.container(border=True))
 
         if imoveis.shape[0]==1:
             
