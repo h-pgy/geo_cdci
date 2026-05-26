@@ -40,3 +40,9 @@ class LayoutCertidao(FPDF):
         
         self.multi_cell(w=0, h=6, text=section, markdown=True)
         self.ln(self.model.space_between_sections) #espaço entre seções
+
+    def write_mapa_lote(self):
+        
+        self.multi_cell(w=0, h=5, text="** Localização do imóvel **", align="C", markdown=True)
+        if os.path.exists(self.model.mapa_lote_path):
+            self.image(self.model.mapa_lote_path, x=30, w=self.w - 60)

@@ -9,6 +9,8 @@ from frontend.utils.button import ButtonGate
 from frontend.dto.certidao import CertidaoDTO, DadosImovelCertidaoDTO
 from frontend.utils.static import static_path
 from frontend.utils.message import error_message, info_message, success_message
+from api.services.lote.lote_location_map_png import LoteLocationMapPNGService
+from typing import Any
 import streamlit as st
 import os
 import tempfile
@@ -38,8 +40,9 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         self.fetch_lote_data = LoteDataFetcher()
         self.conveter_data_por_extenso = ConversorDataExtenso()
         self.tempdir = tempfile.gettempdir()
+        self.gerar_img_mapa_lote = LoteLocationMapPNGService(raster=True, convert_to_4326=False, default_width=512, default_height=512)
 
-    def parse_lote_data_to_certidao_model(self, lote_data: dict[str, any]) -> DadosImovelCertidaoDTO:
+    def parse_lote_data_to_certidao_model(self, lote_data: dict[str, Any]) -> DadosImovelCertidaoDTO:
 
         certidao_data = {}
         for certidao_attr, lote_attr in self.atributos_imovel_certidao.items():
@@ -103,25 +106,32 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
         return [inicio, identificacao_imovel, despacho]
 
-    def gerar_certidao_model(self, dados_imovel: DadosImovelCertidaoDTO) -> CertidaoModel:
+    def gerar_certidao_model(self, dados_imovel: DadosImovelCertidaoDTO, property_choice: PropertyChoiceDTO) -> CertidaoModel:
 
         cabecalho = "Certidão de Existência de Lançamento - IPTU"
         logo_cabecalho = static_path("logo_horizontal.png")
         logo_watermark = static_path("logo_vertical.png")
         rodape = "Esta certidão foi emitida de forma automatizada."
+        mapa_lote_path = self.gerar_mapa_lote(property_choice)
 
         return CertidaoModel(
             header=cabecalho,
             path_header_logo=logo_cabecalho,
             path_watermark=logo_watermark,
             footer=rodape,
-            space_between_sections=6
+            space_between_sections=6,
+            mapa_lote_path=mapa_lote_path
             )
 
+    def gerar_mapa_lote(self, property_choice: PropertyChoiceDTO) -> str:
 
-    def gerar_pdf_certidao(self, dados_imovel: DadosImovelCertidaoDTO) -> str:
+        id_lote = property_choice.cd_identificador_lote
+        output_file = f"mapa_lote_{id_lote}.png"
+        return self.gerar_img_mapa_lote(id_lote, output_file)
 
-        certidao_model = self.gerar_certidao_model(dados_imovel)
+    def gerar_pdf_certidao(self, dados_imovel: DadosImovelCertidaoDTO, property_choice: PropertyChoiceDTO) -> str:
+
+        certidao_model = self.gerar_certidao_model(dados_imovel, property_choice)
         gerar_certidao = GeradorCertidao(certidao_model)
         secoes = self.secoes_certidao(dados_imovel)
 
@@ -146,7 +156,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
             return ":material/check_circle:"
 
 
-    def subsecao_gerar_certidao(self, container: StreamlitWidget, dados_imovel: DadosImovelCertidaoDTO, button_gate: ButtonGate):
+    def subsecao_gerar_certidao(self, container: StreamlitWidget, dados_imovel: DadosImovelCertidaoDTO, button_gate: ButtonGate, property_choice: PropertyChoiceDTO):
 
     
         botao_text = self.button_gerar_certidao_txt(button_gate)
@@ -154,7 +164,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
         if button_gate.is_pressed:
             with container.spinner("Gerando certidão..."):
-                caminho_certidao = self.gerar_pdf_certidao(dados_imovel)
+                caminho_certidao = self.gerar_pdf_certidao(dados_imovel, property_choice)
                 success_message(container, "Certidão gerada com sucesso!")
                 return caminho_certidao
         else:
@@ -186,7 +196,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         self.subsecao_dados_imovel(internal_container, dados_imovel)
 
         gate_triger_certidao = ButtonGate("trigger_gerar_certidao")
-        path_certidao = self.subsecao_gerar_certidao(internal_container, dados_imovel, gate_triger_certidao)
+        path_certidao = self.subsecao_gerar_certidao(internal_container, dados_imovel, gate_triger_certidao, property_choice)
 
         button_download_gate = ButtonGate("trigger_download_certidao")
         if os.path.exists(path_certidao):

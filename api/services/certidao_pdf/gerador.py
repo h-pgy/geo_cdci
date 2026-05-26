@@ -17,6 +17,7 @@ class GeradorCertidao:
         self.layout.watermark()
         for section in sections:
             self.layout.write_section(section)
+        self.layout.write_mapa_lote()
         self.layout.footer()
 
     def salvar_pdf(self, output_path: str)->str:
