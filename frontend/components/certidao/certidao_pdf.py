@@ -28,7 +28,8 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         "codlog": "cd_logradouro",
         "cd_setor": "cd_setor_fiscal",
         "cd_quadra": "cd_quadra_fiscal",
-        "cd_lote": "cd_lote"
+        "cd_lote": "cd_lote",
+        "cd_digito_sql" : "cd_digito_sql"
     }
 
     def __init__(self)->None:

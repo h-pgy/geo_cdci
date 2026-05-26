@@ -12,10 +12,11 @@ class DadosImovelCertidaoDTO(BaseModel):
     cd_setor: str
     cd_quadra: str
     cd_lote: str
+    cd_digito_sql: str
 
     @property
     def setor_quadra_lote(self) -> str:
-        return f"{self.cd_setor}.{self.cd_quadra}.{self.cd_lote}"
+        return f"{self.cd_setor}.{self.cd_quadra}.{self.cd_lote}-{self.cd_digito_sql}"
 
 class CertidaoDTO(BaseModel):
 
