@@ -8,6 +8,7 @@ from frontend.components.fuzzy_search_logradouro.perfect_match import PerfectMat
 from frontend.components.fuzzy_search_logradouro.logradouro_selection import LogradouroSelection
 from frontend.components.property_selection.perfect_match import PerfectPropertyMatch
 from frontend.components.property_selection.near_neighboors import NearNeighboorsPropertyMatch
+from frontend.components.certidao.certidao_pdf import CertidaoPDFComponent
 from frontend.dto.base import AppFlowSignal
 from api.services.fuzzy_iptu_address_search import AddressMatcher
 
@@ -135,11 +136,24 @@ def main(debug: bool = True):
             selected_imovel = controller.trigger_section(perfect_property_match)
             if selected_logradouro.signal == AppFlowSignal.GO:
                 controller.bypass_section(near_neighboors_property_match, data=selected_imovel.data)
+            certidao_dependency = perfect_property_match
         else:
             selected_imovel = controller.trigger_section(near_neighboors_property_match)
             if selected_logradouro.signal == AppFlowSignal.GO:
                 controller.bypass_section(perfect_property_match, data=selected_imovel.data)
+            certidao_dependency = near_neighboors_property_match
 
+    # --------- CERTIDAO PDF GENERATION SECTION -----------------------------
+
+    certidao_pdf_space = main_container.container()
+    certidao_pdf_component = AppSection(
+        container=certidao_pdf_space,
+        component=CertidaoPDFComponent()
+    )
+
+    certidao_pdf_component.add_dependency(certidao_dependency)
+    controller.register(certidao_pdf_component)
+    controller.trigger_section(certidao_pdf_component)
 
     # ---------- DEBUG SECTION -----------------------------
     if debug:
