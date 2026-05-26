@@ -12,7 +12,7 @@ from frontend.dto.base import AppFlowSignal
 from api.services.fuzzy_iptu_address_search import AddressMatcher
 
 
-def main():
+def main(debug: bool = True):
 
     # Inicialização do estado e controlador
 
@@ -27,39 +27,85 @@ def main():
     # main container
     main_container = st.container(autoscroll=True)
 
-    # espaços para organizar o layout
-    #nao pode fazer tudo space porque se nao o autscroll fica zuado
-    #soh usar space se quiser substituir o que tem dentro
+    # ---------- HEADER SECTION -----------------------------
     header_space = main_container.container()
-    form_space = main_container.container()
-    results_match_space = main_container.container()
-    property_match_space = main_container.container()
 
     header = AppSection(
         container=header_space,
         component=Header(),
     )
+    controller.register(header)
+    controller.trigger_section(header)    
 
+
+    # ---------- ADDRESS INPUT SECTION -----------------------------
+
+
+    form_space = main_container.container()
+    
     address_form = AppSection(
         container=form_space,
         component=AddressForm(),
     )
 
+    address_form.add_dependency(header)
+    controller.register(address_form)
+    address_input = controller.trigger_section(address_form)
+    if address_input.signal == AppFlowSignal.NO_GO or address_input.signal ==  AppFlowSignal.ERROR:
+        #nao dá pra seguir no app se não tiver o input de endereço, então a gente para aqui
+        st.stop()
+
+    # --------- LOGRADOURO MATCHING SECTION -----------------------------
+
+
+    logradouro_match_space = main_container.container()
+
+    #essa selçao é mais complexa, tem mais subseções e tem branching
     logradouro_search = AppSection(
-        container=results_match_space,
+        container=logradouro_match_space,
         component=LogradouroSearchProcessor(matcher=matcher),
     )
 
     perfect_match_logradouro = AppSection(
-        container=results_match_space,
+        container=logradouro_match_space,
         component=PerfectMatchLogradouro(matcher=matcher),
     )
 
     logradouro_selection = AppSection(
-        container=results_match_space,
+        container=logradouro_match_space,
         component=LogradouroSelection(matcher=matcher),
     )
 
+    logradouro_search.add_dependency(address_form)
+    logradouro_selection.add_dependency(logradouro_search)
+    perfect_match_logradouro.add_dependency(logradouro_search)
+
+    controller.register(logradouro_search)
+    controller.register(perfect_match_logradouro)
+    controller.register(logradouro_selection)
+
+    logradouro_results = controller.trigger_section(logradouro_search)
+
+    #resolve qual o tipo de selecao de logradouro e estrutura as dependencias da aplicacao de acordo
+    if logradouro_results.signal == AppFlowSignal.GO and logradouro_results.data.match_100:
+        selected_logradouro = controller.trigger_section(perfect_match_logradouro)
+        if selected_logradouro.signal == AppFlowSignal.GO:
+            controller.bypass_section(logradouro_selection, data=selected_logradouro.data)
+        property_match_depencency = perfect_match_logradouro
+    elif logradouro_results.signal == AppFlowSignal.GO and not logradouro_results.data.match_100:
+        selected_logradouro = controller.trigger_section(logradouro_selection)
+        if selected_logradouro.signal == AppFlowSignal.GO:
+            controller.bypass_section(perfect_match_logradouro, data=selected_logradouro.data)
+        property_match_depencency = logradouro_selection
+    else:
+        st.error("Ocorreu um erro ao buscar os logradouros correspondentes ao endereço inserido. Por favor, tente novamente ou entre em contato com o suporte.")
+        st.stop()
+
+    # --------- PROPERTY MATCHING SECTION -----------------------------
+
+    property_match_space = main_container.container()
+
+        
     perfect_property_match = AppSection(
         container=property_match_space,
         component=PerfectPropertyMatch(matcher=matcher),
@@ -70,47 +116,15 @@ def main():
         component=NearNeighboorsPropertyMatch(matcher=matcher),
     )
 
-    address_form.add_dependency(header)
-    logradouro_search.add_dependency(address_form)
-    logradouro_selection.add_dependency(logradouro_search)
-    perfect_match_logradouro.add_dependency(logradouro_search)
+    
     perfect_property_match.add_dependency(address_form)
+    perfect_property_match.add_dependency(property_match_depencency)
     near_neighboors_property_match.add_dependency(address_form)
+    near_neighboors_property_match.add_dependency(property_match_depencency)
 
     
-    controller.register(header)
-    controller.register(address_form)
-    controller.register(logradouro_search)
-    controller.register(perfect_match_logradouro)
-    controller.register(logradouro_selection)
     controller.register(perfect_property_match)
     controller.register(near_neighboors_property_match)
-
-    controller.trigger_section(header)        
-    address_input = controller.trigger_section(address_form)
-    if address_input.signal == AppFlowSignal.NO_GO or address_input.signal ==  AppFlowSignal.ERROR:
-        #nao dá pra seguir no app se não tiver o input de endereço, então a gente para aqui
-        st.stop()
-    logradouro_results = controller.trigger_section(logradouro_search) 
-
-
-    #resolve qual o tipo de selecao de logradouro e estrutura as dependencias da aplicacao de acordo
-    if logradouro_results.signal == AppFlowSignal.GO and logradouro_results.data.match_100:
-        selected_logradouro = controller.trigger_section(perfect_match_logradouro)
-        if selected_logradouro.signal == AppFlowSignal.GO:
-            controller.bypass_section(logradouro_selection, data=selected_logradouro.data)
-        near_neighboors_property_match.add_dependency(perfect_match_logradouro)
-        perfect_property_match.add_dependency(perfect_match_logradouro)
-    elif logradouro_results.signal == AppFlowSignal.GO and not logradouro_results.data.match_100:
-        selected_logradouro = controller.trigger_section(logradouro_selection)
-        if selected_logradouro.signal == AppFlowSignal.GO:
-            controller.bypass_section(perfect_match_logradouro, data=selected_logradouro.data)
-        near_neighboors_property_match.add_dependency(logradouro_selection)
-        perfect_property_match.add_dependency(logradouro_selection)
-    else:
-        st.error("Ocorreu um erro ao buscar os logradouros correspondentes ao endereço inserido. Por favor, tente novamente ou entre em contato com o suporte.")
-        st.stop()
-
 
     if selected_logradouro.signal == AppFlowSignal.GO:
         codlog_selecionado = selected_logradouro.data.codlog
@@ -127,9 +141,11 @@ def main():
                 controller.bypass_section(perfect_property_match, data=selected_imovel.data)
 
 
-    st.button('Olá')
-    st.write(st.session_state)   
-    st.stop()
+    # ---------- DEBUG SECTION -----------------------------
+    if debug:
+        st.button('Rerun')
+        st.write(st.session_state)   
+        st.stop()
 
 if __name__=="__main__":
     main()
