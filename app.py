@@ -143,9 +143,12 @@ def main(debug: bool = True):
 
     # ---------- DEBUG SECTION -----------------------------
     if debug:
-        st.button('Rerun')
-        st.write(st.session_state)   
-        st.stop()
+        debug_container = st.container(border=True)
+        with debug_container:
+            st.markdown('## Seção de Debug - Apenas em modo de desenvolvimento')
+            st.button('Rerun')
+            st.write(st.session_state)   
+            st.stop()
 
 if __name__=="__main__":
     main()

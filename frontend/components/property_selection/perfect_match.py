@@ -92,9 +92,9 @@ class PerfectPropertyMatch(UIComponent[PropertyChoiceDTO]):
         return False
     
     
-    def _render(self, container: StreamlitWidget, input_dtos: Tuple[LogradouroChoiceDTO, AddressInputDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: Tuple[AddressInputDTO, LogradouroChoiceDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
 
-        logradouro_choice, address_input = input_dtos
+        address_input, logradouro_choice = input_dtos
 
         imoveis = self.get_address_info(
             logradouro_choice=logradouro_choice,

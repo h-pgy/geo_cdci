@@ -78,9 +78,9 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
         return data
     
-    def _render(self, container: StreamlitWidget, input_dtos: Tuple[LogradouroChoiceDTO, AddressInputDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
+    def _render(self, container: StreamlitWidget, input_dtos: Tuple[AddressInputDTO, LogradouroChoiceDTO]) -> BaseComponentResponse[PropertyChoiceDTO]:
 
-        logradouro_choice, address_input = input_dtos
+        address_input, logradouro_choice = input_dtos
 
         imoveis = self.matcher.get_nearest_neighbor_addresses(logradouro_choice.codlog, int(address_input.numero))
 
