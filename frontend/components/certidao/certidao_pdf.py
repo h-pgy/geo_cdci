@@ -61,21 +61,20 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
         container.markdown("#### Dados do Imóvel")
         container.markdown(f"- **Número**: {dados_imovel.numero}")
         container.markdown(f"- **Logradouro**: {dados_imovel.logradouro}")
-        container.markdown(f"- **Complemento**: {dados_imovel.complemento}")
+        if dados_imovel.complemento is not None:
+            container.markdown(f"- **Complemento**: {dados_imovel.complemento}")
         container.markdown(f"- **Código do Logradouro**: {dados_imovel.codlog}")
         container.markdown(f"- **Setor/Quadra/Lote**: {dados_imovel.setor_quadra_lote}")
 
     def despacho(self, dados_imovel: DadosImovelCertidaoDTO) -> str:
 
-        despacho = """
-
-        ####Despacho
+        despacho = """## Despacho
 
         ** Solicitação Deferida **
 
         Com base nas informações consultadas de forma automatizada junto à base de dados oficial do município de São Paulo, declara-se que o imóvel:
 
-        * Possui lançamento do Imposto Predial e Territorial Urbano (IPTU) pelo contribuinte número {setor_quadra_lote}
+            . Possui lançamento do Imposto Predial e Territorial Urbano (IPTU) pelo contribuinte número {setor_quadra_lote}
         
         """
 
@@ -83,17 +82,18 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
     
     def identificacao_do_imovel(self, dados_imovel: DadosImovelCertidaoDTO) -> str:
 
-        identificacao = """
+        identificacao = """## Identificação do Imóvel
 
-        ####Identificação do Imóvel
+        O imóvel objeto desta certidão está localizado no endereço {logradouro} (codlog: {codlog}), número {numero}"""
 
-        O imóvel objeto desta certidão está localizado no endereço {logradouro}, número {numero}, complemento {complemento}, código do logradouro {codlog}.
+        if dados_imovel.complemento:
+            identificacao += f", complemento {dados_imovel.complemento}."
+        else:
+            identificacao += "."
 
-        """
         return identificacao.format(
             logradouro=dados_imovel.logradouro,
             numero=dados_imovel.numero,
-            complemento=dados_imovel.complemento,
             codlog=dados_imovel.codlog
         )
 
@@ -119,7 +119,7 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
             path_header_logo=logo_cabecalho,
             path_watermark=logo_watermark,
             footer=rodape,
-            space_between_sections=6,
+            space_between_sections=2,
             mapa_lote_path=mapa_lote_path
             )
 

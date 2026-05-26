@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator, Field
 from frontend.dto.property_match import PropertyChoiceDTO
+from typing import Optional
 import os
 
 
@@ -7,7 +8,7 @@ class DadosImovelCertidaoDTO(BaseModel):
 
     numero: str 
     logradouro: str 
-    complemento: str 
+    complemento: Optional[str]=None 
     codlog: str 
     cd_setor: str
     cd_quadra: str
