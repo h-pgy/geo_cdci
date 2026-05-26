@@ -7,6 +7,7 @@ from frontend.utils.button import ButtonGate
 from frontend.utils.message import error_message, warning_message, success_message
 from api.services.fuzzy_iptu_address_search import AddressMatcher
 from frontend.components.property_selection.property_selection_subcomponent import DataEditorPropertyChoice
+from frontend.utils.maps.map_lote_unico import LoteUnicoMapPlugin
 import pandas as pd
 from streamlit.delta_generator import DeltaGenerator as StreamlitWidget
 from typing import Optional, Tuple
@@ -26,6 +27,7 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
     def __init__(self, matcher: Optional[AddressMatcher] = None)->None:
         self.matcher = matcher or AddressMatcher()
         self.data_editor_component = DataEditorPropertyChoice(submit_button_key="nearest_neighboors_submit")
+        self.render_map_lote = LoteUnicoMapPlugin()
 
     def extract_codlog(self, logradouro_choice: LogradouroChoiceDTO) -> str:
         return logradouro_choice.codlog
@@ -42,7 +44,7 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
         key_short_circuit_button = "imovel_nao_encontrado_near_neighboors"
         gate_short_circuit = ButtonGate(key_short_circuit_button)
         space_short_circuit = container.empty()
-        button_short_circuit = container.button("O imóvel esperado não está na lista acima?", type="tertiary", on_click=gate_short_circuit.press)
+        button_short_circuit = container.button("O imóvel esperado não está na lista abaixo?", type="tertiary", on_click=gate_short_circuit.press)
         if gate_short_circuit.is_pressed:
             container_info_short_circuit = space_short_circuit.container(border=True)
             container_info_short_circuit.warning("Lamentamos que o resultado não tenha atendido às suas expectativas.", icon=":material/x_circle:")
@@ -88,6 +90,7 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
             return BaseComponentResponse(signal=AppFlowSignal.ERROR, data=None, message=not_found_error_message)
         
         internal_contaienr = container.container(border=True)
+        internal_contaienr.markdown("### Endereços próximos encontrados")
         internal_contaienr.markdown(f"O endereço informado - **{logradouro_choice.logradouro} {address_input.numero}** - não foi encontrado em nossa base de dados. Mas buscamos aqui os imóveis com a numeração mais próxima da numeração informada para o logradouro selecionado. Por favor, selecione o imóvel correto para prosseguir com a emissão da certidão.")
         not_found_rerun = self.not_found_reinit(internal_contaienr)
         if not_found_rerun:
@@ -96,7 +99,12 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
                 data=None,
                 message=warning_message(self, "Reiniciando a busca por imóveis próximos para que você possa inserir uma nova consulta.")
             )
-        data = self.imovel_selection(internal_contaienr, imoveis, int(address_input.numero), logradouro_choice)
+        
+        col_selection, col_mapa = internal_contaienr.columns([2,1])
+
+        data = self.imovel_selection(col_selection, imoveis, int(address_input.numero), logradouro_choice)
+        if data:
+            self.render_map_lote(data.cd_identificador_lote, col_mapa)
 
         message = success_message(self, "Imóvel identificado com sucesso! Prosseguindo para a próxima etapa.")
 
