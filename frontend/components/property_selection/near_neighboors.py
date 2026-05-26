@@ -103,7 +103,7 @@ class NearNeighboorsPropertyMatch(UIComponent[PropertyChoiceDTO]):
 
         data = self.imovel_selection(col_selection, imoveis, int(address_input.numero), logradouro_choice)
         if data:
-            self.render_map_lote(data.cd_identificador_lote, col_mapa)
+            self.render_map_lote(data.cd_identificador_lote, col_mapa.container(border=True))
 
         message = success_message(self, "Imóvel identificado com sucesso! Prosseguindo para a próxima etapa.")
 
