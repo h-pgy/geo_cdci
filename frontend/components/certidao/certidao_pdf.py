@@ -147,14 +147,13 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
             return ":material/check_circle:"
 
 
-    def subsecao_gerar_certidao(self, container: StreamlitWidget, dados_imovel: DadosImovelCertidaoDTO):
+    def subsecao_gerar_certidao(self, container: StreamlitWidget, dados_imovel: DadosImovelCertidaoDTO, button_gate: ButtonGate):
 
-        gate_triger_certidao = ButtonGate("trigger_gerar_certidao")
+    
+        botao_text = self.button_gerar_certidao_txt(button_gate)
+        botao_gerar= container.button(botao_text, on_click=button_gate.press)
 
-        botao_text = self.button_gerar_certidao_txt(gate_triger_certidao)
-        botao_gerar= container.button(botao_text, on_click=gate_triger_certidao.press)
-
-        if gate_triger_certidao.is_pressed:
+        if button_gate.is_pressed:
             with container.spinner("Gerando certidão..."):
                 caminho_certidao = self.gerar_pdf_certidao(dados_imovel)
                 success_message(container, "Certidão gerada com sucesso!")
@@ -186,7 +185,9 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
 
         dados_imovel = self.dados_imovel(property_choice)
         self.subsecao_dados_imovel(internal_container, dados_imovel)
-        path_certidao = self.subsecao_gerar_certidao(internal_container, dados_imovel)
+
+        gate_triger_certidao = ButtonGate("trigger_gerar_certidao")
+        path_certidao = self.subsecao_gerar_certidao(internal_container, dados_imovel, gate_triger_certidao)
 
         button_download_gate = ButtonGate("trigger_download_certidao")
         if os.path.exists(path_certidao):
@@ -201,6 +202,9 @@ class CertidaoPDFComponent(UIComponent[CertidaoDTO]):
                 dados_imovel=dados_imovel,
                 input_data=property_choice
             )
+            #desaperta botao de atualizar
+            gate_triger_certidao.reset()
+
             message = success_message(self, "Certidão baixada com sucesso!")
             return BaseComponentResponse(data=data, signal=AppFlowSignal.GO, message=message)
         else:
