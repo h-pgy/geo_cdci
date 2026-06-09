@@ -83,6 +83,9 @@ class WFSFetcher:
     
     def fetch_feature_batches(self, nome_camada:str, output_format:str="application/json", count:Optional[int]=None, 
                        start_index:Optional[int]=None, **query_parameters)->Generator[List[dict], None, None]:
+        
+        start_index = start_index or self.start_index
+        
         while True:
             data = self.get_layer_data(
                 nome_camada=nome_camada,
